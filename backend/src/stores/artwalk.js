@@ -40,13 +40,13 @@ async function artwalk() {
             await page.waitForSelector('.info-name-product');
 
             const srcLink = link;
-            
+
             const productReference = await page.$eval('.productReference', el => el.innerText);
-            
+
             const store = "Artwalk";
-            
+
             const img = await page.$eval('.ns-product-image.is-selected', el => el.querySelector('img').src);
-            
+
             const sneakerName = await page.$eval('.info-name-product > .productName', el => el.innerText);
 
             const price = await page.$eval('.ns-product-price__value', el => {
@@ -57,15 +57,16 @@ async function artwalk() {
                 }
                 return null;
             });
-            
+
             const availableSizes = await page.$$eval('.dimension-Tamanho:not(.item_unavaliable)', els => els.map(el => el.innerText));
 
             const sneakerObj = { srcLink, productReference, store, img, sneakerName, price, availableSizes };
             try {
                 const existingSneaker = await SneakerModel.findOne({ productReference });
                 if (existingSneaker) {
-                    if (existingSneaker.price !== price) {
+                    if (existingSneaker.price !== price || existingSneaker.availableSizes !== availableSizes) {
                         existingSneaker.price = price;
+                        existingSneaker.availableSizes = availableSizes;
                         await existingSneaker.save();
                         console.log('Sneaker atualizado no banco de dados.');
                     } else {
