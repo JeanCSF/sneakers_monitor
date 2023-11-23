@@ -23,10 +23,16 @@ const sneakerSchema = new Schema({
         type: String,
         required: true
     },
-    price: {
+    currentPrice: {
         type: String,
         required: true
     },
+    priceHistory: [
+        {
+            price: { type: String, required: true },
+            date: { type: Date, default: Date.now }
+        }
+    ],
     availableSizes: {
         type: [String],
         required: true
