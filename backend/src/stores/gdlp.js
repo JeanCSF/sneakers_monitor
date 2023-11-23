@@ -1,4 +1,5 @@
 const pup = require("puppeteer");
+const { Sneaker: SneakerModel } = require("../../models/Sneaker");
 const axios = require('axios');
 
 const url = "https://gdlp.com.br/";

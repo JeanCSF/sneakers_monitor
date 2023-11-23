@@ -16,7 +16,7 @@ const searchFor = [
     // 'air jordan 6',
 ];
 
-async function artwalk() {
+async function lojavirus() {
     const browser = await pup.launch({ headless: true });
     const page = await browser.newPage();
 
@@ -47,7 +47,7 @@ async function artwalk() {
             const productReference = await page.$eval('.segura-nome', el => el.querySelector('h1').innerText.match(/\b[A-Z]+\d+-\d+\b/).toString());
 
             const store = "Loja Virus";
-
+            await page.waitForSelector('.slick-slide');
             const img = await page.$eval('.slick-slide', el => el.querySelector('a').href);
 
             const sneakerName = await page.$eval('.segura-nome', el => el.querySelector('h1').innerText);
@@ -92,4 +92,4 @@ async function artwalk() {
     await browser.close();
 };
 
-module.exports = artwalk;
+module.exports = lojavirus;

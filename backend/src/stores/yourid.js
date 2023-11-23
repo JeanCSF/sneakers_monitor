@@ -16,7 +16,7 @@ const searchFor = [
     // 'air jordan 6',
 ];
 
-async function gdlp() {
+async function yourid() {
     const browser = await pup.launch({ headless: true });
     const page = await browser.newPage();
 
@@ -102,4 +102,4 @@ async function gdlp() {
     await browser.close();
 };
 
-module.exports = gdlp;
+module.exports = yourid;
