@@ -1,6 +1,6 @@
 const pup = require("puppeteer");
 
-const url = "https://www.lojavirus.com.br/";
+const url = "https://droper.app/buscar";
 const searchFor = 'air force';
 
 (async () => {
@@ -12,19 +12,28 @@ const searchFor = 'air force';
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     console.log('url access');
 
-    await page.waitForSelector('.material-icons');
-    await page.click('.material-icons');
-    await page.waitForTimeout(1000);
+    await page.waitForSelector('.buscarv4-input');
 
-    await page.waitForSelector('#txtBuscaMobile');
-    await page.type('#txtBuscaMobile', searchFor);
+    await page.type('.buscarv4-input', searchFor);
+    await page.keyboard.press('Enter')
+    await page.waitForSelector('button.buscarv4-btn-filtrar');
+    await page.click('button.buscarv4-btn-filtrar');
+
+    await page.waitForSelector('button.md-icon-button.md-button.md-autofocus.md-ink-ripple');
+    await page.waitForTimeout(1000);
+    await page.click('button.md-icon-button.md-button.md-autofocus.md-ink-ripple');
+    await page.click('#radio-menorprecoordenacao');
+    await page.click('.buscarv4-input');
+
 
     await Promise.all([
-        page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-        page.keyboard.press('Enter')
+        page.waitForNavigation(),
     ]);
 
-    const links = await page.$$eval('.imagem-spot', el => el.map(container => container.querySelector('a').href));
+    const links = await page.$$eval('div[ng-click^="$root.irPara"] > a', anchors => {
+        return anchors.map(anchor => anchor.href);
+    });
+    
     console.log(links);
     console.log(links.length);
     for (const link of links) {
@@ -55,6 +64,6 @@ const searchFor = 'air force';
         const sneakerObj = { srcLink, img, productReference, sneakerName, price, availableSizes };
         console.log(sneakerObj);
     }
-    await page.waitForTimeout(3000)
+    await page.waitForTimeout(5000);
     await browser.close();
 })();
