@@ -86,29 +86,32 @@ async function gdlp() {
                 availableSizes
             };
 
-            try {
-                const existingSneaker = await SneakerModel.findOne({ productReference, store });
+            if (sneakerName.toLowerCase().includes(term.toLowerCase()) && availableSizes.length !== 0) {
+                try {
+                    const existingSneaker = await SneakerModel.findOne({ productReference, store });
 
-                if (existingSneaker) {
-                    if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
+                    if (existingSneaker) {
+                        if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
 
-                        existingSneaker.currentPrice = price;
-                        existingSneaker.priceHistory.push({ price, date: new Date() });
-                        existingSneaker.availableSizes = availableSizes;
-                        await existingSneaker.save();
-                        
-                        console.log('Sneaker atualizado no banco de dados.');
+                            existingSneaker.currentPrice = price;
+                            existingSneaker.priceHistory.push({ price, date: new Date() });
+                            existingSneaker.availableSizes = availableSizes;
+                            await existingSneaker.save();
+
+                            console.log('Sneaker atualizado no banco de dados.');
+                        } else {
+                            console.log('Sneaker já existe no banco de dados e o preço não mudou.');
+                        }
                     } else {
-                        console.log('Sneaker já existe no banco de dados e o preço não mudou.');
+                        await SneakerModel.create(sneakerObj);
+                        console.log('Sneaker adicionado ao banco de dados.');
                     }
-                } else {
-                    const apiResponse = await axios.post(`${BASEURL}/api/stores/${store}/sneakers`, sneakerObj);
-                    console.log(apiResponse.data.msg);
+                } catch (error) {
+                    console.error('Erro ao chamar o endpoint da API:', error);
                 }
-            } catch (error) {
-                console.error('Erro ao chamar o endpoint da API:', error);
+            } else {
+                console.log('O modelo não corresponde à pesquisa. Não será salvo no banco de dados.');
             }
-
         }
         await page.waitForTimeout(3000);
     }
