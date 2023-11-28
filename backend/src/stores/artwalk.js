@@ -2,11 +2,6 @@ const pup = require("puppeteer");
 require('dotenv').config();
 const { arraysEqual } = require('../utils/utils');
 const { Sneaker: SneakerModel } = require("../../models/Sneaker");
-const axios = require('axios');
-
-const isProduction = process.env.NODE_ENV === 'production';
-
-const BASEURL = isProduction ? process.env.PROD_BASE_URL : process.env.DEV_BASE_URL;
 
 const url = "https://www.artwalk.com.br/";
 const searchFor = [
@@ -25,6 +20,7 @@ const searchFor = [
 async function artwalk() {
     const browser = await pup.launch({ headless: true });
     const page = await browser.newPage();
+    console.log("artwalk started");
 
     for (const term of searchFor) {
         await page.goto(url, { waitUntil: 'domcontentloaded' });
@@ -98,7 +94,7 @@ async function artwalk() {
 
             if (sneakerName.toLowerCase().includes(term.toLowerCase()) && availableSizes.length !== 0) {
                 try {
-                    const existingSneaker = await SneakerModel.findOne({ productReference, store });
+                    const existingSneaker = await SneakerModel.findOne({ store, productReference });
 
                     if (existingSneaker) {
                         if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
@@ -126,6 +122,7 @@ async function artwalk() {
         await page.waitForTimeout(3000);
     }
     await browser.close();
+    console.log("artwalk finished");
 };
 
 module.exports = artwalk;

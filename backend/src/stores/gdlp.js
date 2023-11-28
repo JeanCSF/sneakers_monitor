@@ -1,13 +1,7 @@
 const pup = require("puppeteer");
 require('dotenv').config();
-const axios = require('axios');
-
-const { Sneaker: SneakerModel } = require("../../models/Sneaker");
 const { arraysEqual } = require('../utils/utils');
-
-const isProduction = process.env.NODE_ENV === 'production';
-
-const BASEURL = isProduction ? process.env.PROD_BASE_URL : process.env.DEV_BASE_URL;
+const { Sneaker: SneakerModel } = require("../../models/Sneaker");
 
 const url = "https://gdlp.com.br/";
 const searchFor = [
@@ -26,6 +20,7 @@ const searchFor = [
 async function gdlp() {
     const browser = await pup.launch({ headless: true });
     const page = await browser.newPage();
+    console.log("gdlp started");
 
     for (const term of searchFor) {
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
@@ -88,7 +83,7 @@ async function gdlp() {
 
             if (sneakerName.toLowerCase().includes(term.toLowerCase()) && availableSizes.length !== 0) {
                 try {
-                    const existingSneaker = await SneakerModel.findOne({ productReference, store });
+                    const existingSneaker = await SneakerModel.findOne({ store, productReference });
 
                     if (existingSneaker) {
                         if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
@@ -116,6 +111,7 @@ async function gdlp() {
         await page.waitForTimeout(3000);
     }
     await browser.close();
+    console.log("gdlp finished");
 };
 
 module.exports = gdlp;
