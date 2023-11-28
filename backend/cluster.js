@@ -1,7 +1,24 @@
 const { Cluster } = require("puppeteer-cluster");
-require('dotenv').config();
 const { Sneaker: SneakerModel } = require("./models/Sneaker");
 const { arraysEqual } = require('./src/utils/utils');
+
+async function updateOrCreateSneaker(existingSneaker, sneakerObj) {
+    if (existingSneaker) {
+        if (existingSneaker.currentPrice !== sneakerObj.currentPrice || !arraysEqual(existingSneaker.availableSizes, sneakerObj.availableSizes)) {
+            existingSneaker.currentPrice = sneakerObj.currentPrice;
+            existingSneaker.priceHistory.push({ price: sneakerObj.currentPrice, date: new Date() });
+            existingSneaker.availableSizes = sneakerObj.availableSizes;
+            await existingSneaker.save();
+            console.log('Sneaker atualizado no banco de dados.');
+        } else {
+            console.log('Sneaker já existe no banco de dados e o preço não mudou.');
+        }
+    } else {
+        await SneakerModel.create(sneakerObj);
+        console.log('Sneaker adicionado ao banco de dados.');
+    }
+}
+
 
 async function scrapeArtwalk(page, term) {
 
@@ -35,7 +52,6 @@ async function scrapeArtwalk(page, term) {
     }
 
     const links = await page.$$eval('.product-item-container', el => el.map(container => container.querySelector('a').href));
-    console.log(links.length)
     for (const link of links) {
         await page.goto(link, { waitUntil: 'domcontentloaded' });
         await page.waitForSelector('.info-name-product');
@@ -68,31 +84,15 @@ async function scrapeArtwalk(page, term) {
             img,
             sneakerName,
             currentPrice: price,
+            discountPrice: null,
             priceHistory: [{ price, date: new Date() }],
             availableSizes
         };
 
         if (sneakerName.toLowerCase().includes(term.toLowerCase()) && availableSizes.length !== 0) {
-            console.log(sneakerObj);
             try {
                 const existingSneaker = await SneakerModel.findOne({ store, productReference });
-
-                if (existingSneaker) {
-                    if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
-
-                        existingSneaker.currentPrice = price;
-                        existingSneaker.priceHistory.push({ price, date: new Date() });
-                        existingSneaker.availableSizes = availableSizes;
-                        await existingSneaker.save();
-
-                        console.log('Sneaker atualizado no banco de dados.');
-                    } else {
-                        console.log('Sneaker já existe no banco de dados e o preço não mudou.');
-                    }
-                } else {
-                    await SneakerModel.create(sneakerObj);
-                    console.log('Sneaker adicionado ao banco de dados.');
-                }
+                updateOrCreateSneaker(existingSneaker, sneakerObj);
             } catch (error) {
                 console.error('Erro ao chamar o endpoint da API:', error);
             }
@@ -155,31 +155,15 @@ async function scrapeGDLP(page, term) {
             img,
             sneakerName,
             currentPrice: price,
+            discountPrice: null,
             priceHistory: [{ price, date: new Date() }],
             availableSizes
         };
 
         if (sneakerName.toLowerCase().includes(term.toLowerCase()) && availableSizes.length !== 0) {
-            console.log(sneakerObj);
             try {
                 const existingSneaker = await SneakerModel.findOne({ store, productReference });
-
-                if (existingSneaker) {
-                    if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
-
-                        existingSneaker.currentPrice = price;
-                        existingSneaker.priceHistory.push({ price, date: new Date() });
-                        existingSneaker.availableSizes = availableSizes;
-                        await existingSneaker.save();
-
-                        console.log('Sneaker atualizado no banco de dados.');
-                    } else {
-                        console.log('Sneaker já existe no banco de dados e o preço não mudou.');
-                    }
-                } else {
-                    await SneakerModel.create(sneakerObj);
-                    console.log('Sneaker adicionado ao banco de dados.');
-                }
+                updateOrCreateSneaker(existingSneaker, sneakerObj);
             } catch (error) {
                 console.error('Erro ao chamar o endpoint da API:', error);
             }
@@ -241,31 +225,15 @@ async function scrapeLojaVirus(page, term) {
             img,
             sneakerName,
             currentPrice: price,
+            discountPrice: null,
             priceHistory: [{ price, date: new Date() }],
             availableSizes
         };
 
         if (sneakerName.toLowerCase().includes(term.toLowerCase()) && availableSizes.length !== 0) {
-            console.log(sneakerObj);
             try {
                 const existingSneaker = await SneakerModel.findOne({ store, productReference });
-
-                if (existingSneaker) {
-                    if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
-
-                        existingSneaker.currentPrice = price;
-                        existingSneaker.priceHistory.push({ price, date: new Date() });
-                        existingSneaker.availableSizes = availableSizes;
-                        await existingSneaker.save();
-
-                        console.log('Sneaker atualizado no banco de dados.');
-                    } else {
-                        console.log('Sneaker já existe no banco de dados e o preço não mudou.');
-                    }
-                } else {
-                    await SneakerModel.create(sneakerObj);
-                    console.log('Sneaker adicionado ao banco de dados.');
-                }
+                updateOrCreateSneaker(existingSneaker, sneakerObj);
             } catch (error) {
                 console.error('Erro ao chamar o endpoint da API:', error);
             }
@@ -333,26 +301,9 @@ async function scrapeCDR(page, term) {
         };
 
         if (sneakerName.toLowerCase().includes(term.toLowerCase()) && availableSizes.length !== 0) {
-            console.log(sneakerObj);
             try {
                 const existingSneaker = await SneakerModel.findOne({ store, productReference });
-
-                if (existingSneaker) {
-                    if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
-
-                        existingSneaker.currentPrice = price;
-                        existingSneaker.priceHistory.push({ price, date: new Date() });
-                        existingSneaker.availableSizes = availableSizes;
-                        await existingSneaker.save();
-
-                        console.log('Sneaker atualizado no banco de dados.');
-                    } else {
-                        console.log('Sneaker já existe no banco de dados e o preço não mudou.');
-                    }
-                } else {
-                    await SneakerModel.create(sneakerObj);
-                    console.log('Sneaker adicionado ao banco de dados.');
-                }
+                updateOrCreateSneaker(existingSneaker, sneakerObj);
             } catch (error) {
                 console.error('Erro ao chamar o endpoint da API:', error);
             }
@@ -425,31 +376,15 @@ async function scrapeYourId(page, term) {
             img,
             sneakerName,
             currentPrice: price,
+            discountPrice: null,
             priceHistory: [{ price, date: new Date() }],
             availableSizes
         };
 
         if (sneakerName.toLowerCase().includes(term.toLowerCase()) && availableSizes.length !== 0) {
-            console.log(sneakerObj);
             try {
                 const existingSneaker = await SneakerModel.findOne({ store, productReference });
-
-                if (existingSneaker) {
-                    if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
-
-                        existingSneaker.currentPrice = price;
-                        existingSneaker.priceHistory.push({ price, date: new Date() });
-                        existingSneaker.availableSizes = availableSizes;
-                        await existingSneaker.save();
-
-                        console.log('Sneaker atualizado no banco de dados.');
-                    } else {
-                        console.log('Sneaker já existe no banco de dados e o preço não mudou.');
-                    }
-                } else {
-                    await SneakerModel.create(sneakerObj);
-                    console.log('Sneaker adicionado ao banco de dados.');
-                }
+                updateOrCreateSneaker(existingSneaker, sneakerObj);
             } catch (error) {
                 console.error('Erro ao chamar o endpoint da API:', error);
             }
@@ -466,7 +401,7 @@ const urls = [
     { url: 'https://gdlp.com.br/', storeFunction: scrapeGDLP },
     { url: 'https://www.lojavirus.com.br/', storeFunction: scrapeLojaVirus },
     { url: 'https://www.correderua.com.br/', storeFunction: scrapeCDR },
-    { url: 'https://youridstore.com.br/', storeFunction: scrapeYourId },
+    // { url: 'https://youridstore.com.br/', storeFunction: scrapeYourId },
 ];
 
 const searchFor = [
@@ -481,35 +416,45 @@ const searchFor = [
     // 'air jordan 5',
     // 'air jordan 6',
 ];
-(async () => {
+async function mainCluster() {
+    try {
+        const cluster = await Cluster.launch({
+            concurrency: Cluster.CONCURRENCY_CONTEXT,
+            maxConcurrency: 5,
+            puppeteerOptions: {
+                headless: false,
+            }
+        });
 
-    const cluster = await Cluster.launch({
-        concurrency: Cluster.CONCURRENCY_CONTEXT,
-        maxConcurrency: 4,
-        puppeteerOptions: {
-            headless: false,
+        let tasksInProgress = 0;
+        const tasksCompleted = [];
+
+        await cluster.task(async ({ page, data: { url, storeFunction } }) => {
+            await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+            await page.goto(url, { waitUntil: 'domcontentloaded' });
+
+            for (const term of searchFor) {
+                await storeFunction(page, term);
+            }
+
+        });
+
+        tasksInProgress--;
+        tasksCompleted.push(true);
+
+        for (const { url, storeFunction } of urls) {
+            tasksInProgress++;
+            cluster.queue({ url, storeFunction });
         }
-    });
 
-
-    await cluster.task(async ({ page, data: { url, storeFunction } }) => {
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-        await page.goto(url, { waitUntil: 'domcontentloaded' });
-
-        for (const term of searchFor) {
-            await storeFunction(page, term);
+        while (tasksInProgress > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
         }
 
-    });
-
-    const tasks = [];
-    for (const { url, storeFunction } of urls) {
-        tasks.push(cluster.queue({ url, storeFunction }));
+        await cluster.idle();
+        await cluster.close();
+    } catch (error) {
+        console.error('Erro inesperado:', error);
     }
-    await Promise.all(tasks);
-
-
-    await cluster.idle();
-    await cluster.close();
-
-})();
+};
+module.exports = mainCluster;
