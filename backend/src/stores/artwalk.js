@@ -1,6 +1,7 @@
 const pup = require("puppeteer");
+require('dotenv').config();
+const { arraysEqual } = require('../utils/utils');
 const { Sneaker: SneakerModel } = require("../../models/Sneaker");
-const axios = require('axios');
 
 const url = "https://www.artwalk.com.br/";
 const searchFor = [
@@ -19,9 +20,10 @@ const searchFor = [
 async function artwalk() {
     const browser = await pup.launch({ headless: true });
     const page = await browser.newPage();
+    console.log("artwalk started");
 
     for (const term of searchFor) {
-        await page.goto(url);
+        await page.goto(url, { waitUntil: 'domcontentloaded' });
 
         await page.waitForSelector('.awk-componente-modal-alterar-localizacao-show');
         await page.click('#ModalAlterarLocalizacaoFechar');
@@ -34,9 +36,28 @@ async function artwalk() {
             page.keyboard.press('Enter')
         ]);
 
+        const scrollToEnd = async () => {
+            await page.evaluate(() => {
+                window.scrollTo(0, document.body.scrollHeight);
+            });
+        };
+
+        let previousHeight = 0;
+
+        while (true) {
+            await scrollToEnd();
+            await page.waitForTimeout(1000);
+            const currentHeight = await page.evaluate(() => document.body.scrollHeight);
+            if (currentHeight === previousHeight) {
+                break;
+            }
+            previousHeight = currentHeight;
+        }
+
         const links = await page.$$eval('.product-item-container', el => el.map(container => container.querySelector('a').href));
+        console.log(links.length)
         for (const link of links) {
-            await page.goto(link);
+            await page.goto(link, { waitUntil: 'domcontentloaded' });
             await page.waitForSelector('.info-name-product');
 
             const srcLink = link;
@@ -60,29 +81,48 @@ async function artwalk() {
 
             const availableSizes = await page.$$eval('.dimension-Tamanho:not(.item_unavaliable)', els => els.map(el => el.innerText));
 
-            const sneakerObj = { srcLink, productReference, store, img, sneakerName, price, availableSizes };
-            try {
-                const existingSneaker = await SneakerModel.findOne({ productReference });
-                if (existingSneaker) {
-                    if (existingSneaker.price !== price || existingSneaker.availableSizes !== availableSizes) {
-                        existingSneaker.price = price;
-                        existingSneaker.availableSizes = availableSizes;
-                        await existingSneaker.save();
-                        console.log('Sneaker atualizado no banco de dados.');
+            const sneakerObj = {
+                srcLink,
+                productReference,
+                store,
+                img,
+                sneakerName,
+                currentPrice: price,
+                priceHistory: [{ price, date: new Date() }],
+                availableSizes
+            };
+
+            if (sneakerName.toLowerCase().includes(term.toLowerCase()) && availableSizes.length !== 0) {
+                try {
+                    const existingSneaker = await SneakerModel.findOne({ store, productReference });
+
+                    if (existingSneaker) {
+                        if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
+
+                            existingSneaker.currentPrice = price;
+                            existingSneaker.priceHistory.push({ price, date: new Date() });
+                            existingSneaker.availableSizes = availableSizes;
+                            await existingSneaker.save();
+
+                            console.log('Sneaker atualizado no banco de dados.');
+                        } else {
+                            console.log('Sneaker já existe no banco de dados e o preço não mudou.');
+                        }
                     } else {
-                        console.log('Sneaker já existe no banco de dados e o preço não mudou.');
+                        await SneakerModel.create(sneakerObj);
+                        console.log('Sneaker adicionado ao banco de dados.');
                     }
-                } else {
-                    const apiResponse = await axios.post('http://localhost:3000/api/sneakers', sneakerObj);
-                    console.log(apiResponse.data.msg);
+                } catch (error) {
+                    console.error('Erro ao chamar o endpoint da API:', error);
                 }
-            } catch (error) {
-                console.error('Erro ao chamar o endpoint da API:', error);
+            } else {
+                console.log('O modelo não corresponde à pesquisa. Não será salvo no banco de dados.');
             }
         }
         await page.waitForTimeout(3000);
     }
     await browser.close();
+    console.log("artwalk finished");
 };
 
 module.exports = artwalk;

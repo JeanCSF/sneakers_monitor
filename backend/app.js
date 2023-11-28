@@ -24,15 +24,62 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 const timeGapInMinutes = "*/2 * * * *";
-const timeGapInHours = "0 */6 * * *";
+const timeGapInHours = "0 */1 * * *";
 
-cron.schedule(timeGapInMinutes, async () => {
-    console.log('Executando scripts');
+const artwalk = async () => {
     try {
         await scrapingArtwalk();
+        console.log('Scraping Artwalk concluído com sucesso');
+    } catch (error) {
+        console.error('Erro ao executar o scraping da Artwalk:', error);
+    }
+};
+
+const gdlp = async () => {
+    try {
         await scrapingGDLP();
+        console.log('Scraping GDLP concluído com sucesso');
+    } catch (error) {
+        console.error('Erro ao executar o scraping da GDLP:', error);
+    }
+};
+
+const lojaVirus = async () => {
+    try {
         await scrapingLojaVirus();
+        console.log('Scraping LojaVirus concluído com sucesso');
+    } catch (error) {
+        console.error('Erro ao executar o scraping da LojaVirus:', error);
+    }
+};
+
+const yourId = async () => {
+    try {
         await scrapingYouID();
+        console.log('Scraping YouID concluído com sucesso');
+    } catch (error) {
+        console.error('Erro ao executar o scraping da YouID:', error);
+    }
+};
+
+const runScrapingScripts = async () => {
+    try {
+        await lojaVirus();
+        await yourId();
+        await artwalk();
+        await gdlp();
+        console.log('Execução inicial dos scripts concluída com sucesso');
+    } catch (error) {
+        console.error('Erro na execução inicial dos scripts:', error);
+    }
+};
+
+runScrapingScripts();
+
+cron.schedule(timeGapInHours, async () => {
+    console.log('Executando scripts');
+    try {
+        await Promise.allSettled([runScrapingScripts()]);
         console.log('Script de scraping concluído com sucesso');
     } catch (error) {
         console.error('Erro ao executar o script de scraping:', error);

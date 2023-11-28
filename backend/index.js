@@ -1,60 +1,118 @@
 const pup = require("puppeteer");
+require('dotenv').config();
+const { Sneaker: SneakerModel } = require("./models/Sneaker");
+const { arraysEqual } = require('./src/utils/utils');
+const axios = require('axios');
 
-const url = "https://www.lojavirus.com.br/";
-const searchFor = 'air force';
+const isProduction = process.env.NODE_ENV === 'production';
+
+const BASEURL = isProduction ? process.env.PROD_BASE_URL : process.env.DEV_BASE_URL;
+
+const url = "https://gdlp.com.br/";
+const searchFor = [
+    'air force'
+    // 'air max',
+    // 'air jordan 1 high', 
+    // 'air jordan 1 mid', 
+    // 'air jordan 1 low',
+    // 'air jordan 2',
+    // 'air jordan 3',
+    // 'air jordan 4',
+    // 'air jordan 5',
+    // 'air jordan 6',
+];
 
 (async () => {
     const browser = await pup.launch({ headless: false });
     const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-    console.log('init ok!');
 
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
-    console.log('url access');
+    for (const term of searchFor) {
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+        await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-    await page.waitForSelector('.material-icons');
-    await page.click('.material-icons');
-    await page.waitForTimeout(1000);
-
-    await page.waitForSelector('#txtBuscaMobile');
-    await page.type('#txtBuscaMobile', searchFor);
-
-    await Promise.all([
-        page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-        page.keyboard.press('Enter')
-    ]);
-
-    const links = await page.$$eval('.imagem-spot', el => el.map(container => container.querySelector('a').href));
-    console.log(links);
-    console.log(links.length);
-    for (const link of links) {
-        await page.goto(link);
-        await page.waitForSelector('.segura-nome');
+        await page.waitForSelector('.skip-link.skip-search');
+        await page.click('.skip-link.skip-search');
         await page.waitForTimeout(1000);
 
-        const srcLink = link;
-        const img = await page.$eval('.slick-slide', el => el.querySelector('a').href);
-        const productReference = await page.$eval('.segura-nome', el => el.querySelector('h1').innerText.match(/\b[A-Z]+\d+-\d+\b/).toString());
-        const sneakerName = await page.$eval('.segura-nome', el => el.querySelector('h1').innerText);
+        await page.waitForSelector('.input-text.required-entry');
+        await page.type('.input-text.required-entry', term);
+        await page.waitForTimeout(1000);
 
-        const price = await page.$eval('.precoPor', el => {
-            const priceText = el.innerText;
-            const match = priceText.match(/R\$\s*([^\n]+)$/);
-            if (match) {
-                return match[1];
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+            page.keyboard.press('Enter')
+        ]);
+
+        const links = await page.$$eval('li.item.last', el => el.map(container => container.querySelector('a').href));
+        for (const link of links) {
+            await page.goto(link, { waitUntil: 'domcontentloaded' });
+            await page.waitForSelector('.main-container');
+            await page.waitForTimeout(1000);
+
+            const srcLink = link;
+
+            const productReference = await page.$eval('#product-attribute-specs-table', el => el.querySelector('tr.last.even > td').innerText);
+
+            const store = "GDLP";
+
+            const img = await page.$eval('figure', el => el.querySelector('img').src);
+
+            const sneakerName = await page.$eval('.breadcrumbs', el => el.querySelector('li.product > strong').innerText);
+
+            const price = await page.$eval('.regular-price', el => {
+                const priceText = el.querySelector('span').innerText;
+                const match = priceText.match(/R\$\s*([^\n]+)/);
+                if (match) {
+                    return match[1];
+                }
+                return null;
+            });
+
+            const availableSizes = await page.$$eval('option', els => {
+                return els
+                    .map(el => el.innerText)
+                    .filter(text => text.trim() !== 'Selecione...');
+            });
+
+            const sneakerObj = {
+                srcLink,
+                productReference,
+                store,
+                img,
+                sneakerName,
+                currentPrice: price,
+                priceHistory: [{ price, date: new Date() }],
+                availableSizes
+            };
+
+            if (sneakerName.toLowerCase().includes(term.toLowerCase()) && availableSizes.length !== 0) {
+                try {
+                    const existingSneaker = await SneakerModel.findOne({ productReference, store });
+
+                    if (existingSneaker) {
+                        if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
+
+                            existingSneaker.currentPrice = price;
+                            existingSneaker.priceHistory.push({ price, date: new Date() });
+                            existingSneaker.availableSizes = availableSizes;
+                            await existingSneaker.save();
+
+                            console.log('Sneaker atualizado no banco de dados.');
+                        } else {
+                            console.log('Sneaker já existe no banco de dados e o preço não mudou.');
+                        }
+                    } else {
+                        const apiResponse = await axios.post(`${BASEURL}/api/stores/${store}/sneakers`, sneakerObj);
+                        console.log(apiResponse.data.msg);
+                    }
+                } catch (error) {
+                    console.error('Erro ao chamar o endpoint da API:', error);
+                }
+            } else {
+                console.log('O modelo não corresponde à pesquisa. Não será salvo no banco de dados.');
             }
-            return null;
-        });
-
-        const availableSizes = await page.$$eval('.valorAtributo:not(.disabled)', els => {
-            return els
-                .map(el => el.innerText.trim())
-                .filter(text => /\d+/.test(text));
-        });
-
-        const sneakerObj = { srcLink, img, productReference, sneakerName, price, availableSizes };
-        console.log(sneakerObj);
+        }
+        await page.waitForTimeout(3000);
     }
-    await page.waitForTimeout(3000)
     await browser.close();
 })();

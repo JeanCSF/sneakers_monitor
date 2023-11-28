@@ -1,13 +1,7 @@
 const pup = require("puppeteer");
 require('dotenv').config();
-const axios = require('axios');
-
-const { Sneaker: SneakerModel } = require("../../models/Sneaker");
 const { arraysEqual } = require('../utils/utils');
-
-const isProduction = process.env.NODE_ENV === 'production';
-
-const BASEURL = isProduction ? process.env.PROD_BASE_URL : process.env.DEV_BASE_URL;
+const { Sneaker: SneakerModel } = require("../../models/Sneaker");
 
 const url = "https://gdlp.com.br/";
 const searchFor = [
@@ -26,6 +20,7 @@ const searchFor = [
 async function gdlp() {
     const browser = await pup.launch({ headless: true });
     const page = await browser.newPage();
+    console.log("gdlp started");
 
     for (const term of searchFor) {
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
@@ -86,33 +81,37 @@ async function gdlp() {
                 availableSizes
             };
 
-            try {
-                const existingSneaker = await SneakerModel.findOne({ productReference, store });
+            if (sneakerName.toLowerCase().includes(term.toLowerCase()) && availableSizes.length !== 0) {
+                try {
+                    const existingSneaker = await SneakerModel.findOne({ store, productReference });
 
-                if (existingSneaker) {
-                    if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
+                    if (existingSneaker) {
+                        if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
 
-                        existingSneaker.currentPrice = price;
-                        existingSneaker.priceHistory.push({ price, date: new Date() });
-                        existingSneaker.availableSizes = availableSizes;
-                        await existingSneaker.save();
-                        
-                        console.log('Sneaker atualizado no banco de dados.');
+                            existingSneaker.currentPrice = price;
+                            existingSneaker.priceHistory.push({ price, date: new Date() });
+                            existingSneaker.availableSizes = availableSizes;
+                            await existingSneaker.save();
+
+                            console.log('Sneaker atualizado no banco de dados.');
+                        } else {
+                            console.log('Sneaker já existe no banco de dados e o preço não mudou.');
+                        }
                     } else {
-                        console.log('Sneaker já existe no banco de dados e o preço não mudou.');
+                        await SneakerModel.create(sneakerObj);
+                        console.log('Sneaker adicionado ao banco de dados.');
                     }
-                } else {
-                    const apiResponse = await axios.post(`${BASEURL}/api/stores/${store}/sneakers`, sneakerObj);
-                    console.log(apiResponse.data.msg);
+                } catch (error) {
+                    console.error('Erro ao chamar o endpoint da API:', error);
                 }
-            } catch (error) {
-                console.error('Erro ao chamar o endpoint da API:', error);
+            } else {
+                console.log('O modelo não corresponde à pesquisa. Não será salvo no banco de dados.');
             }
-
         }
         await page.waitForTimeout(3000);
     }
     await browser.close();
+    console.log("gdlp finished");
 };
 
 module.exports = gdlp;
