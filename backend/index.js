@@ -2,13 +2,7 @@ const pup = require("puppeteer");
 require('dotenv').config();
 const { Sneaker: SneakerModel } = require("./models/Sneaker");
 const { arraysEqual } = require('./src/utils/utils');
-const axios = require('axios');
-
-const isProduction = process.env.NODE_ENV === 'production';
-
-const BASEURL = isProduction ? process.env.PROD_BASE_URL : process.env.DEV_BASE_URL;
-
-const url = "https://gdlp.com.br/";
+const url = "https://www.correderua.com.br/";
 const searchFor = [
     'air force'
     // 'air max',
@@ -30,12 +24,8 @@ const searchFor = [
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
         await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-        await page.waitForSelector('.skip-link.skip-search');
-        await page.click('.skip-link.skip-search');
-        await page.waitForTimeout(1000);
-
-        await page.waitForSelector('.input-text.required-entry');
-        await page.type('.input-text.required-entry', term);
+        await page.waitForSelector('#auto-complete');
+        await page.type('#auto-complete', term);
         await page.waitForTimeout(1000);
 
         await Promise.all([
@@ -43,36 +33,38 @@ const searchFor = [
             page.keyboard.press('Enter')
         ]);
 
-        const links = await page.$$eval('li.item.last', el => el.map(container => container.querySelector('a').href));
+        const links = await page.$$eval('li.span3 > .cn-melhor-imagem', el => el.map(container => container.querySelector('a.produto-sobrepor').href));
         for (const link of links) {
             await page.goto(link, { waitUntil: 'domcontentloaded' });
-            await page.waitForSelector('.main-container');
+            await page.waitForSelector('.row-fluid');
             await page.waitForTimeout(1000);
 
             const srcLink = link;
 
-            const productReference = await page.$eval('#product-attribute-specs-table', el => el.querySelector('tr.last.even > td').innerText);
+            const productReference = await page.$eval('.info-principal-produto', el => el.querySelector('span[itemprop^="sku"]').innerText);
 
-            const store = "GDLP";
+            const store = "CDR";
 
-            const img = await page.$eval('figure', el => el.querySelector('img').src);
+            const img = await page.$eval('.conteiner-imagem', el => el.querySelector('a').href);
 
-            const sneakerName = await page.$eval('.breadcrumbs', el => el.querySelector('li.product > strong').innerText);
+            const sneakerName = await page.$eval('.info-principal-produto', el => el.querySelector('h1').innerText);
 
-            const price = await page.$eval('.regular-price', el => {
-                const priceText = el.querySelector('span').innerText;
-                const match = priceText.match(/R\$\s*([^\n]+)/);
+            const price = await page.$eval('.preco-produto.destaque-preco strong[data-sell-price]', el => {
+                const sellPriceAttribute = el.getAttribute('data-sell-price');
+
+                return sellPriceAttribute ? sellPriceAttribute.trim() : null;
+            });
+
+            const discountPrice = await page.$eval('span.desconto-a-vista strong', el => {
+                const priceText = el.innerText;
+                const match = priceText.match(/R\$\s*([^\n]+)$/);
                 if (match) {
                     return match[1];
                 }
                 return null;
             });
 
-            const availableSizes = await page.$$eval('option', els => {
-                return els
-                    .map(el => el.innerText)
-                    .filter(text => text.trim() !== 'Selecione...');
-            });
+            const availableSizes = await page.$$eval('a.atributo-item:not(.indisponivel)', els => els.map(el => el.innerText));
 
             const sneakerObj = {
                 srcLink,
@@ -81,33 +73,35 @@ const searchFor = [
                 img,
                 sneakerName,
                 currentPrice: price,
+                discountPrice: discountPrice,
                 priceHistory: [{ price, date: new Date() }],
                 availableSizes
             };
 
             if (sneakerName.toLowerCase().includes(term.toLowerCase()) && availableSizes.length !== 0) {
-                try {
-                    const existingSneaker = await SneakerModel.findOne({ productReference, store });
+                console.log(sneakerObj);
+                // try {
+                //     const existingSneaker = await SneakerModel.findOne({ store, productReference });
 
-                    if (existingSneaker) {
-                        if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
+                //     if (existingSneaker) {
+                //         if (existingSneaker.currentPrice !== price || !arraysEqual(existingSneaker.availableSizes, availableSizes)) {
 
-                            existingSneaker.currentPrice = price;
-                            existingSneaker.priceHistory.push({ price, date: new Date() });
-                            existingSneaker.availableSizes = availableSizes;
-                            await existingSneaker.save();
+                //             existingSneaker.currentPrice = price;
+                //             existingSneaker.priceHistory.push({ price, date: new Date() });
+                //             existingSneaker.availableSizes = availableSizes;
+                //             await existingSneaker.save();
 
-                            console.log('Sneaker atualizado no banco de dados.');
-                        } else {
-                            console.log('Sneaker já existe no banco de dados e o preço não mudou.');
-                        }
-                    } else {
-                        const apiResponse = await axios.post(`${BASEURL}/api/stores/${store}/sneakers`, sneakerObj);
-                        console.log(apiResponse.data.msg);
-                    }
-                } catch (error) {
-                    console.error('Erro ao chamar o endpoint da API:', error);
-                }
+                //             console.log('Sneaker atualizado no banco de dados.');
+                //         } else {
+                //             console.log('Sneaker já existe no banco de dados e o preço não mudou.');
+                //         }
+                //     } else {
+                //         await SneakerModel.create(sneakerObj);
+                //         console.log('Sneaker adicionado ao banco de dados.');
+                //     }
+                // } catch (error) {
+                //     console.error('Erro ao chamar o endpoint da API:', error);
+                // }
             } else {
                 console.log('O modelo não corresponde à pesquisa. Não será salvo no banco de dados.');
             }
