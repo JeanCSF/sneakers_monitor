@@ -27,6 +27,10 @@ const sneakerSchema = new Schema({
         type: String,
         required: true
     },
+    discountPrice: {
+        type: String,
+        required: false
+    },
     priceHistory: [
         {
             price: { type: String, required: true },
