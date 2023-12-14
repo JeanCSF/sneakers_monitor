@@ -235,7 +235,7 @@ const scrapeCDR = async (page, term) => {
         page.keyboard.press('Enter')
     ]);
 
-    const links = await page.$$eval('li.span3 > .cn-melhor-imagem', el => el.map(container => container.querySelector('a.produto-sobrepor').href));
+    const links = await page.$$eval('li.span3 > .cn-melhor-imagem', el => el.map(container => container.querySelector('a').href));
     for (const link of links) {
         await page.goto(link, { waitUntil: 'domcontentloaded' });
         await page.waitForSelector('.row-fluid');
