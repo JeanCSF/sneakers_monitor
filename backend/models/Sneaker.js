@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const { Schema } = mongoose;
+const { Schema, Types } = mongoose;
 
 const sneakerSchema = new Schema({
     srcLink: {
@@ -24,30 +24,29 @@ const sneakerSchema = new Schema({
         required: true
     },
     currentPrice: {
-        type: String,
+        type: Types.Decimal128,
         required: true
     },
     discountPrice: {
-        type: String,
+        type: Types.Decimal128,
         required: false
     },
     priceHistory: [
         {
-            price: { type: String, required: true },
+            price: { type: Types.Decimal128, required: true },
             date: { type: Date, default: Date.now }
         }
     ],
     availableSizes: {
-        type: [String],
+        type: [Number],
         required: true
     }
 },
     { timestamps: true }
 );
 
-const Sneaker = mongoose.model("Sneaker", sneakerSchema);
+const Sneaker = mongoose.model("sneaker", sneakerSchema, "snkrs-magnet");
 
 module.exports = {
     Sneaker,
-    sneakerSchema,
 };

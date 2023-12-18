@@ -1,17 +1,14 @@
 const { Cluster } = require('puppeteer-cluster');
-const {
-    getLinks,
-    processLink
-} = require('./src/utils/utils');
+const { getLinks, processLink } = require('./src/utils/utils');
 
-let allResults = [];
+const allResultsSet = new Set();
 
 const urls = [
     'https://www.artwalk.com.br/',
-    'https://www.correderua.com.br/',
-    'https://www.lojavirus.com.br/',
-    'https://www.gdlp.com.br/',
-    // // 'https://youridstore.com.br/',
+    // 'https://www.correderua.com.br/',
+    // 'https://www.lojavirus.com.br/',
+    // 'https://www.gdlp.com.br/',
+    // 'https://youridstore.com.br/',
 ];
 
 const storesObj = {
@@ -56,43 +53,45 @@ const storesObj = {
             img: 'figure[itemprop^="associatedMedia"]',
             sneakerName: '.fbits-produto-nome.prodTitle.title',
             price: '.precoPor',
-            availableSizes: '.valorAtributo',
+            availableSizes: '.valorAtributo:not(.disabled)',
         },
     },
     // 'https://youridstore.com.br/': 'youridstore',
 };
 
 const searchFor = [
+    // 'converse',
     'air force',
-    'adidas superstar',
-    'air max',
-    'air jordan',
-    'adidas forum',
-    'adidas samba',
-    'adidas gazelle',
-    'adidas campus',
-    'adidas ADI2000',
-    'puma suede',
-    'puma basket',
-    'puma 180',
-    'puma slipstream',
-    'reebok classic',
-    'reebok club c',
-    'vans old skool',
-    'vans authentic',
-    'vans sk8',
-    'vans era',
-    'vans ultrarange',
-    'asics gel',
-    'fila corda'
+    // 'adidas superstar',
+    // 'air max',
+    // 'air jordan',
+    // 'adidas forum',
+    // 'adidas samba',
+    // 'adidas gazelle',
+    // 'adidas campus',
+    // 'adidas ADI2000',
+    // 'puma suede',
+    // 'puma basket',
+    // 'puma 180',
+    // 'puma slipstream',
+    // 'reebok classic',
+    // 'reebok club c',
+    // 'vans old skool',
+    // 'vans authentic',
+    // 'vans sk8',
+    // 'vans era',
+    // 'vans ultrarange',
+    // 'asics gel',
+    // 'fila corda'
 ];
 
-async function processResultsCluster(results) {
-    const processingCluster = await Cluster.launch({
+async function mainCluster() {
+    const cluster = await Cluster.launch({
         concurrency: Cluster.CONCURRENCY_CONTEXT,
         maxConcurrency: 5,
         // monitor: true,
         puppeteerOptions: {
+            // headless: "new",
             headless: false,
             defaultViewport: {
                 width: 1366,
@@ -101,42 +100,29 @@ async function processResultsCluster(results) {
         }
     });
 
-    await processingCluster.task(async ({ page, data: { link } }) => {
-        try {
-            const storeObj = storesObj[link.replace(/.*?\/\/(?:www\.)?(.*?)\.com.*/, '$1')];
-            await processLink(page, link, storeObj);
-        } catch (error) {
-            console.error(`Error processing ${link}:`, error.message);
-        }
-    });
+    async function processResultsCluster(results) {
+        await cluster.task(async ({ page, data: { url } }) => {
+            try {
+                const storeObj = storesObj[url.replace(/.*?\/\/(?:www\.)?(.*?)\.com.*/, '$1')];
+                await processLink(page, url, storeObj);
+            } catch (error) {
+                console.error(`Error processing ${url}:`, error.message);
+            }
+        });
 
-    for (const link of results) {
-        processingCluster.queue({ link });
+        for (const url of results) {
+            cluster.queue({ url });
+        }
+        await cluster.idle();
+        await cluster.close();
     }
-
-    await processingCluster.idle();
-    await processingCluster.close();
-}
-
-async function mainCluster() {
-    const cluster = await Cluster.launch({
-        concurrency: Cluster.CONCURRENCY_CONTEXT,
-        maxConcurrency: 4,
-        // monitor: true,
-        puppeteerOptions: {
-            headless: "new",
-            defaultViewport: {
-                width: 1366,
-                height: 768,
-            },
-        }
-    });
 
     await cluster.task(async ({ page, data: { url, term } }) => {
         try {
             const storeObj = storesObj[url.replace(/.*?\/\/(?:www\.)?(.*?)\.com.*/, '$1')];
-            const links = await getLinks(page, url, storeObj, term, allResults);
-            allResults.push(...links);
+            const links = await getLinks(page, url, storeObj, term);
+
+            links.forEach(link => allResultsSet.add(link));
         } catch (error) {
             console.error(`Error processing ${url} with term ${term}:`, error.message);
             console.error(error.stack);
@@ -149,9 +135,8 @@ async function mainCluster() {
         }
     }
     await cluster.idle();
-    await cluster.close();
-    console.log(allResults.length);
-    await processResultsCluster(allResults);
+    console.log(`${allResultsSet.size} total results`);
+    await processResultsCluster([...allResultsSet]);
 }
 
 module.exports = mainCluster;
