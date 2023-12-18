@@ -1,15 +1,21 @@
 const { Cluster } = require('puppeteer-cluster');
-const { arraysEqual, updateOrCreateSneaker, createSearchUrl, generalScrape } = require('./src/utils/utils');
+const {
+    getLinks,
+    processLink
+} = require('./src/utils/utils');
+
+let allResults = [];
+
 const urls = [
-    'https://www.correderua.com.br/',
     'https://www.artwalk.com.br/',
-    'https://gdlp.com.br/',
+    'https://www.correderua.com.br/',
     'https://www.lojavirus.com.br/',
+    'https://www.gdlp.com.br/',
     // // 'https://youridstore.com.br/',
 ];
 
 const storesObj = {
-    'https://www.correderua.com.br/': {
+    'correderua': {
         name: 'CDR',
         selectors: {
             links: 'li.span3 > .cn-melhor-imagem:not(.indisponivel)',
@@ -20,59 +26,50 @@ const storesObj = {
             availableSizes: 'a.atributo-item:not(.indisponivel)',
         },
     },
-    'https://www.artwalk.com.br/': {
+    'artwalk': {
         name: 'Artwalk',
         selectors: {
-            links: '.product-item-container',
+            links: '.product-item:not(.produto-indisponivel)',
             productReference: '.productReference',
-            img: '.ns-product-image.is-selected',
+            img: '.product-image.is-selected, .ns-product-image.is-selected',
             sneakerName: '.info-name-product > .productName',
             price: '.ns-product-price__value',
-            availableSizes: '.dimension-Tamanho:not(.item_unavaliable)',
+            availableSizes: '.dimension-Tamanho',
         },
     },
-    'https://gdlp.com.br/': {
+    'gdlp': {
         name: 'GDLP',
         selectors: {
             links: 'li.item.last',
             productReference: '#product-attribute-specs-table tr.last.even > td',
-            img: 'figure',
+            img: '.magic-slide.mt-active',
             sneakerName: '.product-name > .h1',
-            price: '.regular-price > span',
+            price: '.regular-price > span.price, .special-price > span.price',
             availableSizes: 'option',
         },
     },
-    'https://www.lojavirus.com.br/': {
+    'lojavirus': {
         name: 'LojaVirus',
         selectors: {
             links: '.imagem-spot',
-            productReference: '.segura-nome h1',
+            productReference: '.segura-nome > h1',
             img: 'figure[itemprop^="associatedMedia"]',
             sneakerName: '.fbits-produto-nome.prodTitle.title',
             price: '.precoPor',
-            availableSizes: '.valorAtributo:not(.disabled)',
+            availableSizes: '.valorAtributo',
         },
     },
     // 'https://youridstore.com.br/': 'youridstore',
 };
 
-
 const searchFor = [
     'air force',
-    'air max 1',
-    'air max 90',
-    'air max 95',
-    'air max 97',
-    'air max tn',
-    'air jordan 1',
-    'air jordan 2',
-    'air jordan 3',
-    'air jordan 4',
-    'air jordan 5',
+    'adidas superstar',
+    'air max',
+    'air jordan',
     'adidas forum',
     'adidas samba',
     'adidas gazelle',
-    'adidas superstar',
     'adidas campus',
     'adidas ADI2000',
     'puma suede',
@@ -82,35 +79,68 @@ const searchFor = [
     'reebok classic',
     'reebok club c',
     'vans old skool',
-    'vans sk8',
     'vans authentic',
+    'vans sk8',
     'vans era',
     'vans ultrarange',
     'asics gel',
+    'fila corda'
 ];
-(async () => {
+
+async function processResultsCluster(results) {
+    const processingCluster = await Cluster.launch({
+        concurrency: Cluster.CONCURRENCY_CONTEXT,
+        maxConcurrency: 5,
+        // monitor: true,
+        puppeteerOptions: {
+            headless: false,
+            defaultViewport: {
+                width: 1366,
+                height: 768,
+            },
+        }
+    });
+
+    await processingCluster.task(async ({ page, data: { link } }) => {
+        try {
+            const storeObj = storesObj[link.replace(/.*?\/\/(?:www\.)?(.*?)\.com.*/, '$1')];
+            await processLink(page, link, storeObj);
+        } catch (error) {
+            console.error(`Error processing ${link}:`, error.message);
+        }
+    });
+
+    for (const link of results) {
+        processingCluster.queue({ link });
+    }
+
+    await processingCluster.idle();
+    await processingCluster.close();
+}
+
+async function mainCluster() {
     const cluster = await Cluster.launch({
         concurrency: Cluster.CONCURRENCY_CONTEXT,
-        maxConcurrency: 20,
+        maxConcurrency: 4,
         // monitor: true,
         puppeteerOptions: {
             headless: "new",
+            defaultViewport: {
+                width: 1366,
+                height: 768,
+            },
         }
     });
 
     await cluster.task(async ({ page, data: { url, term } }) => {
-        console.log(`================Início de processamento de ${url} com o termo ${term}==============`);
         try {
-            await Promise.all([
-                page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-                page.goto(createSearchUrl(url, term), { waitUntil: 'domcontentloaded' }),
-            ]);
-            await generalScrape(page, term, storesObj[url])
+            const storeObj = storesObj[url.replace(/.*?\/\/(?:www\.)?(.*?)\.com.*/, '$1')];
+            const links = await getLinks(page, url, storeObj, term, allResults);
+            allResults.push(...links);
         } catch (error) {
-            console.error(`Erro ao processar ${url} com o termo ${term}:`, error.message);
+            console.error(`Error processing ${url} with term ${term}:`, error.message);
             console.error(error.stack);
         }
-        console.log(`================Fim de processamento de ${url} com o termo ${term}==============`);
     });
 
     for (const url of urls) {
@@ -120,5 +150,8 @@ const searchFor = [
     }
     await cluster.idle();
     await cluster.close();
+    console.log(allResults.length);
+    await processResultsCluster(allResults);
+}
 
-})();
+module.exports = mainCluster;
