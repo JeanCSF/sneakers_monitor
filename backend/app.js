@@ -21,7 +21,7 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 const timeGapInMinutes = "*/2 * * * *";
-const timeGapInHours = "0 */1 * * *";
+const timeGapInHours = "0 */6 * * *";
 
 const runScrapingScripts = async () => {
     try {
@@ -34,7 +34,6 @@ const runScrapingScripts = async () => {
 runScrapingScripts();
 
 cron.schedule(timeGapInHours, async () => {
-    console.log('Executando scripts');
     try {
         await Promise.allSettled([runScrapingScripts()]);
         console.log('Script de scraping concluído com sucesso');
