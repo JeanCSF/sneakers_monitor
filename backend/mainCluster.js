@@ -5,15 +5,16 @@ const allResultsSet = new Set();
 
 const urls = [
     'https://www.artwalk.com.br/',
-    // 'https://www.correderua.com.br/',
-    // 'https://www.lojavirus.com.br/',
-    // 'https://www.gdlp.com.br/',
+    'https://www.correderua.com.br/',
+    'https://www.lojavirus.com.br/',
+    'https://www.gdlp.com.br/',
     // 'https://youridstore.com.br/',
 ];
 
 const storesObj = {
     'correderua': {
         name: 'CDR',
+        baseUrl: 'https://www.correderua.com.br/',
         selectors: {
             links: 'li.span3 > .cn-melhor-imagem:not(.indisponivel)',
             productReference: '.info-principal-produto span[itemprop^="sku"]',
@@ -21,10 +22,12 @@ const storesObj = {
             sneakerName: '.nome-produto.titulo.cor-secundaria',
             price: '.preco-produto.destaque-preco strong[data-sell-price]',
             availableSizes: 'a.atributo-item:not(.indisponivel)',
+            pagination: '',
         },
     },
     'artwalk': {
         name: 'Artwalk',
+        baseUrl: 'https://www.artwalk.com.br/',
         selectors: {
             links: '.product-item:not(.produto-indisponivel)',
             productReference: '.productReference',
@@ -32,10 +35,12 @@ const storesObj = {
             sneakerName: '.info-name-product > .productName',
             price: '.ns-product-price__value',
             availableSizes: '.dimension-Tamanho',
+            pagination: '',
         },
     },
     'gdlp': {
         name: 'GDLP',
+        baseUrl: 'https://www.gdlp.com.br/',
         selectors: {
             links: 'li.item.last',
             productReference: '#product-attribute-specs-table tr.last.even > td',
@@ -43,10 +48,12 @@ const storesObj = {
             sneakerName: '.product-name > .h1',
             price: '.regular-price > span.price, .special-price > span.price',
             availableSizes: 'option',
+            pagination: '.amount--has-pages',
         },
     },
     'lojavirus': {
         name: 'LojaVirus',
+        baseUrl: 'https://www.lojavirus.com.br/',
         selectors: {
             links: '.imagem-spot',
             productReference: '.segura-nome > h1',
@@ -54,35 +61,36 @@ const storesObj = {
             sneakerName: '.fbits-produto-nome.prodTitle.title',
             price: '.precoPor',
             availableSizes: '.valorAtributo:not(.disabled)',
+            pagination: '.fbits-paginacao ul li.pg a',
         },
     },
     // 'https://youridstore.com.br/': 'youridstore',
 };
 
 const searchFor = [
-    // 'converse',
+    'converse',
     'air force',
-    // 'adidas superstar',
-    // 'air max',
-    // 'air jordan',
-    // 'adidas forum',
-    // 'adidas samba',
-    // 'adidas gazelle',
-    // 'adidas campus',
-    // 'adidas ADI2000',
-    // 'puma suede',
-    // 'puma basket',
-    // 'puma 180',
-    // 'puma slipstream',
-    // 'reebok classic',
-    // 'reebok club c',
-    // 'vans old skool',
-    // 'vans authentic',
-    // 'vans sk8',
-    // 'vans era',
-    // 'vans ultrarange',
-    // 'asics gel',
-    // 'fila corda'
+    'adidas superstar',
+    'air max',
+    'air jordan',
+    'adidas forum',
+    'adidas samba',
+    'adidas gazelle',
+    'adidas campus',
+    'adidas ADI2000',
+    'puma suede',
+    'puma basket',
+    'puma 180',
+    'puma slipstream',
+    'reebok classic',
+    'reebok club c',
+    'vans old skool',
+    'vans authentic',
+    'vans sk8',
+    'vans era',
+    'vans ultrarange',
+    'asics gel',
+    'fila corda'
 ];
 
 async function mainCluster() {

@@ -3,7 +3,7 @@ const { Decimal128 } = require("mongodb");
 const randomUserAgent = require('random-useragent');
 const ExcelJS = require("exceljs");
 const path = require("path");
-const onTest = true;
+const onTest = false;
 const workbook = new ExcelJS.Workbook();
 const worksheet = workbook.addWorksheet("Test Data");
 worksheet.addRow(["Store", "Product Reference", "Sneaker Name", "Current Price", "Discount Price", "Available Sizes", "Date", "Link", "Image"]);
@@ -37,6 +37,11 @@ function arraysEqual(arr1, arr2) {
     return true;
 }
 
+function strToDecimal(str) {
+    const cleanedStr = str.replace(/\./g, '').replace(',', '.');
+    return parseFloat(cleanedStr);
+}
+
 async function updateOrCreateSneaker(sneakerObj) {
     const { productReference, store } = sneakerObj;
     try {
@@ -48,8 +53,6 @@ async function updateOrCreateSneaker(sneakerObj) {
             console.log(`Sneaker ${sneakerObj.sneakerName} added to test data: ${filePath}`);
         } else {
             const existingSneaker = await SneakerModel.findOne({ store, productReference });
-            sneakerObj.currentPrice = new Decimal128(sneakerObj.currentPrice);
-            sneakerObj.discountPrice = sneakerObj.discountPrice ? new Decimal128(sneakerObj.discountPrice) : null;
             if (existingSneaker) {
                 if (!arraysEqual(existingSneaker.availableSizes, sneakerObj.availableSizes)) {
                     existingSneaker.availableSizes = sneakerObj.availableSizes;
@@ -106,15 +109,26 @@ async function interceptRequests(page) {
     });
 }
 
-async function getNumOfPages(page) {
+async function getNumOfPages(page, storeName, storeSelectors) {
     try {
-        return await page.evaluate(() => {
-            const links = document.querySelectorAll('.fbits-paginacao ul li.pg a');
-            if (links.length >= 2) {
-                return parseInt(links[links.length - 2].innerText);
-            }
-            return null;
-        });
+        switch (storeName) {
+            case "LojaVirus":
+                return await page.evaluate((selectors) => {
+                    const links = document.querySelectorAll(selectors.pagination);
+                    if (links.length >= 2) {
+                        return parseInt(links[links.length - 2].innerText);
+                    }
+                    return null;
+                }, storeSelectors);
+            case "GDLP":
+                const total = await page.evaluate((selectors) => {
+                    const element = document.querySelector(selectors.pagination);
+                    return element ? element.textContent.trim().split(' ')[2] : null;
+                }, storeSelectors);
+                return total ? Math.ceil(total / 40) : null;
+            default:
+                return null;
+        }
     } catch (error) {
         console.error("Error getting num of pages:", error);
         console.error(error.stack);
@@ -126,24 +140,25 @@ async function getLinks(page, url, storeObj, term) {
         await page.setUserAgent(randomUserAgent.getRandom());
         await interceptRequests(page);
         await page.goto(createSearchUrl(url, term), { waitUntil: 'domcontentloaded' });
+
         await scrollPage(page);
-        const newUrl = page.url();
 
-        const pageNumbers = await getNumOfPages(page);
-
-        const links = await page.$$eval(storeObj.selectors.links, containers => {
-            return Array.from(new Set(containers.map(container => container.querySelector("a").href)));
+        const links = await page.$$eval(storeObj.selectors.links, (containers) => {
+            return containers.map(container => container.querySelector("a").href);
         });
+        const pageNumbers = await getNumOfPages(page, storeObj.name, storeObj.selectors);
 
         if (pageNumbers !== null && pageNumbers > 1) {
             for (let i = 2; i <= pageNumbers; i++) {
-                console.log(`${newUrl}?pagina=${i}`);
-                await page.goto(`${newUrl}?pagina=${i}`, { waitUntil: 'domcontentloaded' });
-
-                const newLinks = await page.$$eval(storeObj.selectors.links, containers => {
-                    return Array.from(new Set(containers.map(container => container.querySelector("a").href)));
+                if (storeObj.name === "LojaVirus") {
+                    await page.goto(`${url}?pagina=${i}`, { waitUntil: 'domcontentloaded' });
+                } else {
+                    await page.goto(`${url}search/page/${i}?q=${term.replace(/\s+/g, "+").toLowerCase()}`, { waitUntil: 'load' });
+                    storeObj.name === "GDLP" ? await page.waitForTimeout(3000) : null;
+                }
+                const newLinks = await page.$$eval(storeObj.selectors.links, (containers) => {
+                    return containers.map(container => container.querySelector("a").href);
                 });
-
                 links.push(...newLinks);
             }
         }
@@ -222,15 +237,20 @@ async function getAvailableSizes(page, storeObj) {
     try {
         const availableSizes = await page.$$eval(storeObj.selectors.availableSizes, (els) => {
             return els
-                .filter(el => !el.classList.contains('.item_unavailable .disabled'))
-                .map((el) => el.innerText.trim())
-                .filter((text) => text.trim() !== "Selecione...")
-                .filter((text) => /\d+/.test(text));
+                .filter(el => !el.classList.contains('item_unavailable') && !el.classList.contains('disabled'))
+                .map((el) => {
+                    const sizeText = el.innerText.trim();
+                    const numericSize = parseFloat(sizeText.replace(/\D/g, ''));
+                    return !isNaN(numericSize) ? numericSize : null;
+                })
+                .filter((size) => size !== null);
         });
+
         return availableSizes;
     } catch (error) {
         console.error("Error getting available sizes:", error);
         console.error(error.stack);
+        return [];
     }
 }
 
@@ -279,9 +299,9 @@ async function getPrice(page, storeObj) {
             if (match) {
                 return match[1];
             }
-            return sellPriceAttribute;
+            return strToDecimal(sellPriceAttribute);
         });
-        return price;
+        return strToDecimal(price);
     } catch (error) {
         console.error("Error getting price:", error);
         console.error(error.stack);
@@ -300,7 +320,7 @@ async function getDiscountPrice(page, storeObj) {
                 return null;
             })
             : null;
-        return discountPrice;
+        return discountPrice ? strToDecimal(discountPrice) : discountPrice;
     } catch (error) {
         console.error("Error getting discount price:", error);
         console.error(error.stack);

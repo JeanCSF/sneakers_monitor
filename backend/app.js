@@ -21,7 +21,7 @@ app.listen(process.env.PORT || 3000, () => {
 });
 
 const timeGapInMinutes = "*/2 * * * *";
-const timeGapInHours = "0 */3 * * *";
+const timeGapInHours = "0 */6 * * *";
 
 const runScrapingScripts = async () => {
     try {
