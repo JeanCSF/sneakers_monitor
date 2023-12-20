@@ -4,15 +4,29 @@ const { getLinks, processLink } = require('./src/utils/utils');
 const allResultsSet = new Set();
 
 const urls = [
-    'https://www.sunika.com.br/',
+    'https://www.maze.com.br/',
+    // 'https://www.sunika.com.br/',
     // 'https://www.artwalk.com.br/',
-    // 'https://www.correderua.com.br/',
+    'https://www.correderua.com.br/',
     // 'https://www.lojavirus.com.br/',
     // 'https://www.gdlp.com.br/',
     // 'https://youridstore.com.br/',
 ];
 
 const storesObj = {
+    maze: {
+        name: 'Maze',
+        baseUrl: 'https://www.maze.com.br/',
+        selectors: {
+            links: '.ui.card.produto.product-in-card.in-stock',
+            productReference: '.row.desc_info > .column_1',
+            img: '.produto.easyzoom',
+            sneakerName: '#produto-nome',
+            price: '#preco',
+            availableSizes: '.ui.variacao.check:not(.sold) > button.ui.basic.button',
+            pagination: '',
+        }
+    },
     sunika: {
         name: 'Sunika',
         baseUrl: 'https://www.sunika.com.br/',
@@ -23,6 +37,7 @@ const storesObj = {
             sneakerName: '.information div .name',
             price: '.priceContainer > strong > span',
             availableSizes: '.options > label:not(.unavailable) > span > b',
+            pagination: '',
         }
     },
     correderua: {
@@ -81,9 +96,9 @@ const storesObj = {
 };
 
 const searchFor = [
-    'converse',
+    // 'converse',
     // 'fila',
-    // 'air force',
+    'air force',
     // 'adidas superstar',
     // 'air max',
     // 'air jordan',
