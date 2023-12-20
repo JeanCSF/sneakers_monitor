@@ -8,7 +8,7 @@ import('rand-user-agent').then(randUserAgentModule => {
     randUserAgent = randUserAgentModule.default || randUserAgentModule.getRandom;
 });
 async function generateRandomUserAgent() {
-    const useRandomUserAgentLib = Math.random() < 1;
+    const useRandomUserAgentLib = Math.random() < 2;
     if (useRandomUserAgentLib) {
         return randomUserAgent.getRandom((ua) => {
             return ua.osName === "macOS" ||
@@ -19,7 +19,7 @@ async function generateRandomUserAgent() {
                 ua.browserName === "Edge";
         });
     } else {
-        return randUserAgent("desktop", "chrome", "windows");
+        return randUserAgent("desktop", "chrome", "windows", "macOS");
     }
 }
 
@@ -104,20 +104,38 @@ async function updateOrCreateSneaker(sneakerObj) {
 function createSearchUrl(url, term) {
     if (url.includes("correderua")) {
         return `${url}buscar?q=${term.replace(/\s+/g, "+").toLowerCase()}`;
-    } else if (url.includes("gdlp")) {
-        return `${url}catalogsearch/result/?q=${term.replace(/\s+/g, "+").toLowerCase()}`;
-    } else if (url.includes("artwalk")) {
-        return `${url}${encodeURIComponent(term).toLowerCase()}?O=OrderByPriceASC&PS=24`;
-    } else if (url.includes("lojavirus")) {
-        return `${url}busca?busca=${term.replace(/\s+/g, "-").toLowerCase()}`;
-    } else if (url.includes("sunika")) {
-        return `${url}pesquisa?t=${term.replace(/\s+/g, "+").toLowerCase()}`;
-    } else if (url.includes("maze")) {
-        return `${url}busca?n=${encodeURIComponent(term).toLowerCase()}`;
-    } else {
-        console.error("Invalid URL:", url);
-        return url;
     }
+
+    if (url.includes("gdlp")) {
+        return `${url}catalogsearch/result/?q=${term.replace(/\s+/g, "+").toLowerCase()}`;
+    }
+
+    if (url.includes("artwalk")) {
+        return `${url}${encodeURIComponent(term).toLowerCase()}?O=OrderByPriceASC&PS=24`;
+    }
+
+    if (url.includes("lojavirus")) {
+        return `${url}busca?busca=${term.replace(/\s+/g, "-").toLowerCase()}`;
+    }
+
+    if (url.includes("sunika")) {
+        return `${url}pesquisa?t=${term.replace(/\s+/g, "+").toLowerCase()}`;
+    }
+
+    if (url.includes("maze")) {
+        return `${url}busca?n=${encodeURIComponent(term).toLowerCase()}`;
+    }
+
+    if (url.includes("ratusskateshop")) {
+        return `${url}search/?q=${encodeURIComponent(term).toLowerCase()}`;
+    }
+
+    if (url.includes("wallsgeneralstore")) {
+        return `${url}loja/busca.php?loja=690339&palavra_busca=${term.replace(/\s+/g, "+").toLowerCase()}`;
+    }
+
+    console.error("Invalid URL:", url);
+    return url;
 }
 
 async function interceptRequests(page) {
@@ -208,9 +226,15 @@ async function getLinks(page, url, storeObj, term) {
         const newUrl = await page.url();
         await scrollPage(page);
 
-        const links = await page.$$eval(storeObj.selectors.links, (containers) => {
+
+        const links = await page.$$eval(storeObj.selectors.links, (containers, storeObj) => {
+            if (storeObj.name === "RatusSkateshop") {
+                return containers
+                    .filter(container => container.querySelector('.item-actions.m-top-half'))
+                    .map(container => container.querySelector("a").href);
+            }
             return containers.map(container => container.querySelector("a").href);
-        });
+        }, storeObj);
 
         const pageNumbers = await getNumOfPages(page, storeObj.name, storeObj.selectors);
         if (pageNumbers !== null && pageNumbers > 1) {
@@ -245,12 +269,13 @@ async function processLink(page, link, storeObj) {
             page.waitForSelector(storeObj.selectors.price),
         ]);
         await scrollPage(page);
-        const availableSizes = await getAvailableSizes(page, storeObj);
+        storeObj.name === "RatusSkateshop" ? await page.waitForTimeout(3000) : null;
         const sneakerName = await getSneakerName(page, storeObj);
         const productReference = await getProductReference(page, storeObj, link);
         const img = await getImg(page, storeObj);
         const price = await getPrice(page, storeObj);
         const discountPrice = await getDiscountPrice(page, storeObj);
+        const availableSizes = await getAvailableSizes(page, storeObj);
 
         const sneakerObj = {
             srcLink,
@@ -269,7 +294,8 @@ async function processLink(page, link, storeObj) {
             sneakerName.toLowerCase().includes('tênis') ||
             sneakerName.toLowerCase().includes('tenis') ||
             sneakerName.toLowerCase().includes(searchTerm) &&
-            (availableSizes !== null && availableSizes.length !== 0)
+            (availableSizes !== null && availableSizes.length !== 0) &&
+            !sneakerName.toLowerCase().includes('calça')
         ) {
             await updateOrCreateSneaker(sneakerObj);
         } else {
@@ -297,6 +323,7 @@ async function getAvailableSizes(page, storeObj) {
         availableSizes.forEach(size => availableSizesSet.add(size));
 
         return [...availableSizesSet];
+
     } catch (error) {
         console.error("Error getting available sizes:", error);
         console.error(error.stack);
@@ -316,6 +343,20 @@ async function getSneakerName(page, storeObj) {
 
 async function getProductReference(page, storeObj, link) {
     try {
+        if (storeObj.name.toLowerCase().includes("wallsgeneralstore")) {
+            const match = link.match(/\/([^\/]+)\/?$/);
+            if (match) {
+                return `${storeObj.name}: ${match[1].toUpperCase()}`;
+            }
+        }
+
+        if (storeObj.name.toLowerCase().includes("ratusskateshop")) {
+            const match = link.match(/\/([^\/]+)\/?$/);
+            if (match) {
+                return `${storeObj.name}: ${match[1].toUpperCase()}`;
+            }
+        }
+
         if (storeObj.name.toLowerCase().includes("sunika")) {
             const match = link.match(/\/[^/]+-([^/]+)$/);
             if (match) {
@@ -325,10 +366,10 @@ async function getProductReference(page, storeObj, link) {
 
         if (storeObj.name.toLowerCase().includes("lojavirus")) {
             const productReference = await page.$eval(storeObj.selectors.productReference, (el) => {
-                const match = el.innerText.match(/\s*([A-Za-z0-9-]+)/);
+                const match = el.innerText.match(/\b([A-Za-z0-9-]+)\b$/);
                 return match ? match[1] : el.innerText;
-            });
-            return productReference;
+            })
+            return productReference.toUpperCase();
         }
 
         if (storeObj.name.toLowerCase().includes("maze")) {
@@ -336,11 +377,11 @@ async function getProductReference(page, storeObj, link) {
                 const match = el.innerText.match(/:(.*?)\s*$/);
                 return match ? match[1].trim() : el.innerText;
             });
-            return productReference;
+            return productReference.toUpperCase();
         }
 
         const productReference = await page.$eval(storeObj.selectors.productReference, (el) => el.innerText);
-        return productReference;
+        return productReference.toUpperCase();
     } catch (error) {
         console.error("Error getting product reference:", error);
         console.error(error.stack);
@@ -354,8 +395,19 @@ async function getImg(page, storeObj) {
                 const aElement = el.querySelector("a").href;
                 return aElement;
             }
-            const imgElement = el.querySelector("img").src;
-            return imgElement;
+            const imgElement = el.querySelector("img");
+            const srcset = imgElement.getAttribute("srcset");
+
+            if (srcset) {
+                const srcsetItemArray = srcset.split(',').map(item => item.trim());
+                const lastSrcsetItem = srcsetItemArray[srcsetItemArray.length - 1];
+
+                const lastSrcsetUrl = lastSrcsetItem.split(' ')[0];
+
+                return `https:${lastSrcsetUrl}`;
+            } else {
+                return imgElement.src;
+            }
         }, storeObj);
         return img;
     } catch (error) {
@@ -373,6 +425,8 @@ async function getPrice(page, storeObj) {
             const match = priceText.match(/R\$\s*([^\n]+)$/);
             if (match) {
                 return match[1];
+            } else {
+                return priceText;
             }
             return sellPriceAttribute.replace('.', ',');
         });
