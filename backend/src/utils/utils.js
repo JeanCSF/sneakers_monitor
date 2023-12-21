@@ -1,4 +1,4 @@
-const onTest = false;
+const onTest = true;
 
 const proxyList = [
     '170.254.99.210:8080',
@@ -171,6 +171,14 @@ function createSearchUrl(url, term) {
         return `${url}loja/busca.php?loja=690339&palavra_busca=${term.replace(/\s+/g, "+").toLowerCase()}`;
     }
 
+    if (url.includes("ostore")) {
+        return `${url}${encodeURIComponent(term).toLowerCase()}?O=OrderByReleaseDateDESC&PS=28`;
+    }
+
+    if (url.includes("sunsetskateshop")) {
+        return `${url}busca/${term.replace(/\s+/g, "-").toLowerCase()}`
+    }
+
     console.error("Invalid URL:", url);
     return url;
 }
@@ -191,7 +199,11 @@ async function interceptRequests(page) {
     });
     page.on('dialog', async (dialog) => {
         if (dialog) {
-            await dialog.accept();
+            try {
+                await dialog.accept();
+            } catch (error) {
+                console.error('Erro ao aceitar o diálogo:', error.message);
+            }
         }
     });
 }
@@ -208,12 +220,20 @@ async function getNumOfPages(page, storeName, storeSelectors) {
                     }
                     return null;
                 }, storeSelectors);
+
             case "GDLP":
-                const total = await page.evaluate((selectors) => {
+                const totalGdlp = await page.evaluate((selectors) => {
                     const element = document.querySelector(selectors.pagination);
                     return element ? element.textContent.trim().split(' ')[2] : null;
                 }, storeSelectors);
-                return total ? Math.ceil(total / 40) : null;
+                return totalGdlp ? Math.ceil(totalGdlp / 40) : null;
+
+            case "Ostore":
+                const totalOstore = await page.$eval(storeSelectors.pagination, (totalElement) => {
+                    return totalElement ? parseInt(totalElement.textContent.trim()) : null;
+                });
+                return totalOstore ? Math.ceil(totalOstore / 28) : null;
+
             default:
                 return null;
         }
@@ -239,9 +259,17 @@ async function iteratePaginationLinks(page, pageNumbers, newUrl, storeObj, term)
                     await page.goto(`${storeObj.baseUrl}search/page/${i}?q=${term.replace(/\s+/g, "+").toLowerCase()}`, { waitUntil: 'load' });
                     break;
 
+                case "Ostore":
+                    await page.setUserAgent(await generateRandomUserAgent());
+                    await page.goto(`${newUrl}#${i}`, { waitUntil: 'networkidle2' });
+                    await page.reload();
+                    await page.waitForSelector('.pace-done');
+                    break;
+
                 default:
                     break;
             }
+
             const links = await page.$$eval(storeObj.selectors.links, (containers) => {
                 return containers.map(container => container.querySelector("a").href);
             });
@@ -326,12 +354,12 @@ async function processLink(page, link, storeObj) {
         };
 
         const searchTerm = ((link.match(/\/([^\/]+)$/) || [])[1] || '').split('-').slice(0, 2).join(' ');
-        if (
-            sneakerName.toLowerCase().includes('tênis') ||
-            sneakerName.toLowerCase().includes('tenis') ||
-            sneakerName.toLowerCase().includes(searchTerm) &&
-            (availableSizes !== null && availableSizes.length !== 0) &&
-            !sneakerName.toLowerCase().includes('calça')
+        if ((availableSizes !== null && availableSizes.length !== 0) &&
+            !sneakerName.toLowerCase().includes('calça') ||
+            !sneakerName.toLowerCase().includes('camisa') ||
+            !sneakerName.toLowerCase().includes('camiseta') ||
+            !sneakerName.toLowerCase().includes('bolsa') ||
+            sneakerName.toLowerCase().includes(searchTerm)
         ) {
             await updateOrCreateSneaker(sneakerObj);
         } else {
@@ -379,6 +407,19 @@ async function getSneakerName(page, storeObj) {
 
 async function getProductReference(page, storeObj, link) {
     try {
+        if (storeObj.name.toLowerCase().includes("sunsetskateshop")) {
+            const productReference = await page.$eval(storeObj.selectors.productReference, (productDescription) => {
+                if (productDescription) {
+                    const text = productDescription.textContent;
+                    const match = text.match(/REF:\s+(\S+)/);
+                    return match ? match[1] : null;
+                }
+                return null;
+            });
+
+            return productReference.toUpperCase();
+        }
+
         if (storeObj.name.toLowerCase().includes("wallsgeneralstore")) {
             const match = link.match(/\/([^\/]+)\/?$/);
             if (match) {
