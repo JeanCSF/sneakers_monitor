@@ -1,4 +1,39 @@
-const onTest = true;
+const onTest = false;
+
+const proxyList = [
+    '170.254.99.210:8080',
+    '187.85.82.222:55676',
+    '189.85.82.38:3128',
+    '177.190.189.16:44443',
+    '177.137.227.246:128',
+    '201.91.82.155:3128',
+    '200.53.19.6:3128',
+    '138.122.82.145:8080',
+    '177.37.100.253:31288',
+    '200.7.118.68:666',
+    '45.232.79.0:9292',
+    '177.53.214.27:999',
+    '143.208.152.61:3180',
+    '191.179.216.84:8080',
+    '177.99.203.179:8080',
+    '186.250.25.230:55443',
+    '45.7.64.49:999',
+    '45.71.169.145:80',
+    '138.59.20.42:9999',
+    '177.93.45.154:999',
+    '177.38.10.15:8080',
+    '179.107.54.27:5566',
+    '192.141.196.129:8080',
+    '177.53.214.208:999',
+    '200.7.10.158:8080',
+    '187.1.57.206:20183',
+    '170.245.132.86:999',
+    '177.66.101.223:8024',
+    '177.93.45.156:999',
+    '45.235.46.94:8080',
+    '177.25.40.146:4343',
+];
+
 const { Sneaker: SneakerModel } = require("../../models/Sneaker");
 const { Decimal128 } = require("mongodb");
 
@@ -8,7 +43,7 @@ import('rand-user-agent').then(randUserAgentModule => {
     randUserAgent = randUserAgentModule.default || randUserAgentModule.getRandom;
 });
 async function generateRandomUserAgent() {
-    const useRandomUserAgentLib = Math.random() < 1;
+    const useRandomUserAgentLib = Math.random() < 2;
     if (useRandomUserAgentLib) {
         return randomUserAgent.getRandom((ua) => {
             return ua.osName === "macOS" ||
@@ -19,7 +54,7 @@ async function generateRandomUserAgent() {
                 ua.browserName === "Edge";
         });
     } else {
-        return randUserAgent("desktop", "chrome", "windows");
+        return randUserAgent("desktop", "chrome", "windows", "macOS");
     }
 }
 
@@ -92,8 +127,10 @@ async function updateOrCreateSneaker(sneakerObj) {
                     console.log("Sneaker price changed.");
                 }
             } else {
-                await SneakerModel.create(sneakerObj);
-                console.log("Sneaker successfully added to database.");
+                if (sneakerObj.availableSizes.length >= 1) {
+                    await SneakerModel.create(sneakerObj);
+                    console.log("Sneaker successfully added to database.");
+                }
             }
         }
     } catch (error) {
@@ -104,20 +141,38 @@ async function updateOrCreateSneaker(sneakerObj) {
 function createSearchUrl(url, term) {
     if (url.includes("correderua")) {
         return `${url}buscar?q=${term.replace(/\s+/g, "+").toLowerCase()}`;
-    } else if (url.includes("gdlp")) {
-        return `${url}catalogsearch/result/?q=${term.replace(/\s+/g, "+").toLowerCase()}`;
-    } else if (url.includes("artwalk")) {
-        return `${url}${encodeURIComponent(term).toLowerCase()}?O=OrderByPriceASC&PS=24`;
-    } else if (url.includes("lojavirus")) {
-        return `${url}busca?busca=${term.replace(/\s+/g, "-").toLowerCase()}`;
-    } else if (url.includes("sunika")) {
-        return `${url}pesquisa?t=${term.replace(/\s+/g, "+").toLowerCase()}`;
-    } else if (url.includes("maze")) {
-        return `${url}busca?n=${encodeURIComponent(term).toLowerCase()}`;
-    } else {
-        console.error("Invalid URL:", url);
-        return url;
     }
+
+    if (url.includes("gdlp")) {
+        return `${url}catalogsearch/result/?q=${term.replace(/\s+/g, "+").toLowerCase()}`;
+    }
+
+    if (url.includes("artwalk")) {
+        return `${url}${encodeURIComponent(term).toLowerCase()}?O=OrderByPriceASC&PS=24`;
+    }
+
+    if (url.includes("lojavirus")) {
+        return `${url}busca?busca=${term.replace(/\s+/g, "-").toLowerCase()}`;
+    }
+
+    if (url.includes("sunika")) {
+        return `${url}pesquisa?t=${term.replace(/\s+/g, "+").toLowerCase()}`;
+    }
+
+    if (url.includes("maze")) {
+        return `${url}busca?n=${encodeURIComponent(term).toLowerCase()}`;
+    }
+
+    if (url.includes("ratusskateshop")) {
+        return `${url}search/?q=${encodeURIComponent(term).toLowerCase()}`;
+    }
+
+    if (url.includes("wallsgeneralstore")) {
+        return `${url}loja/busca.php?loja=690339&palavra_busca=${term.replace(/\s+/g, "+").toLowerCase()}`;
+    }
+
+    console.error("Invalid URL:", url);
+    return url;
 }
 
 async function interceptRequests(page) {
@@ -208,9 +263,14 @@ async function getLinks(page, url, storeObj, term) {
         const newUrl = await page.url();
         await scrollPage(page);
 
-        const links = await page.$$eval(storeObj.selectors.links, (containers) => {
+        const links = await page.$$eval(storeObj.selectors.links, (containers, storeObj) => {
+            if (storeObj.name === "RatusSkateshop") {
+                return containers
+                    .filter(container => container.querySelector('.item-actions.m-top-half'))
+                    .map(container => container.querySelector("a").href);
+            }
             return containers.map(container => container.querySelector("a").href);
-        });
+        }, storeObj);
 
         const pageNumbers = await getNumOfPages(page, storeObj.name, storeObj.selectors);
         if (pageNumbers !== null && pageNumbers > 1) {
@@ -245,12 +305,13 @@ async function processLink(page, link, storeObj) {
             page.waitForSelector(storeObj.selectors.price),
         ]);
         await scrollPage(page);
-        const availableSizes = await getAvailableSizes(page, storeObj);
+        storeObj.name === "RatusSkateshop" ? await page.waitForTimeout(3000) : null;
         const sneakerName = await getSneakerName(page, storeObj);
         const productReference = await getProductReference(page, storeObj, link);
         const img = await getImg(page, storeObj);
         const price = await getPrice(page, storeObj);
         const discountPrice = await getDiscountPrice(page, storeObj);
+        const availableSizes = await getAvailableSizes(page, storeObj);
 
         const sneakerObj = {
             srcLink,
@@ -269,7 +330,8 @@ async function processLink(page, link, storeObj) {
             sneakerName.toLowerCase().includes('tênis') ||
             sneakerName.toLowerCase().includes('tenis') ||
             sneakerName.toLowerCase().includes(searchTerm) &&
-            (availableSizes !== null && availableSizes.length !== 0)
+            (availableSizes !== null && availableSizes.length !== 0) &&
+            !sneakerName.toLowerCase().includes('calça')
         ) {
             await updateOrCreateSneaker(sneakerObj);
         } else {
@@ -297,6 +359,7 @@ async function getAvailableSizes(page, storeObj) {
         availableSizes.forEach(size => availableSizesSet.add(size));
 
         return [...availableSizesSet];
+
     } catch (error) {
         console.error("Error getting available sizes:", error);
         console.error(error.stack);
@@ -316,6 +379,20 @@ async function getSneakerName(page, storeObj) {
 
 async function getProductReference(page, storeObj, link) {
     try {
+        if (storeObj.name.toLowerCase().includes("wallsgeneralstore")) {
+            const match = link.match(/\/([^\/]+)\/?$/);
+            if (match) {
+                return `${storeObj.name}: ${match[1].toUpperCase()}`;
+            }
+        }
+
+        if (storeObj.name.toLowerCase().includes("ratusskateshop")) {
+            const match = link.match(/\/([^\/]+)\/?$/);
+            if (match) {
+                return `${storeObj.name}: ${match[1].toUpperCase()}`;
+            }
+        }
+
         if (storeObj.name.toLowerCase().includes("sunika")) {
             const match = link.match(/\/[^/]+-([^/]+)$/);
             if (match) {
@@ -325,10 +402,10 @@ async function getProductReference(page, storeObj, link) {
 
         if (storeObj.name.toLowerCase().includes("lojavirus")) {
             const productReference = await page.$eval(storeObj.selectors.productReference, (el) => {
-                const match = el.innerText.match(/\s*([A-Za-z0-9-]+)/);
+                const match = el.innerText.match(/\b([A-Za-z0-9-]+)\b$/);
                 return match ? match[1] : el.innerText;
-            });
-            return productReference;
+            })
+            return productReference.toUpperCase();
         }
 
         if (storeObj.name.toLowerCase().includes("maze")) {
@@ -336,11 +413,11 @@ async function getProductReference(page, storeObj, link) {
                 const match = el.innerText.match(/:(.*?)\s*$/);
                 return match ? match[1].trim() : el.innerText;
             });
-            return productReference;
+            return productReference.toUpperCase();
         }
 
         const productReference = await page.$eval(storeObj.selectors.productReference, (el) => el.innerText);
-        return productReference;
+        return productReference.toUpperCase();
     } catch (error) {
         console.error("Error getting product reference:", error);
         console.error(error.stack);
@@ -354,8 +431,19 @@ async function getImg(page, storeObj) {
                 const aElement = el.querySelector("a").href;
                 return aElement;
             }
-            const imgElement = el.querySelector("img").src;
-            return imgElement;
+            const imgElement = el.querySelector("img");
+            const srcset = imgElement.getAttribute("srcset");
+
+            if (srcset) {
+                const srcsetItemArray = srcset.split(',').map(item => item.trim());
+                const lastSrcsetItem = srcsetItemArray[srcsetItemArray.length - 1];
+
+                const lastSrcsetUrl = lastSrcsetItem.split(' ')[0];
+
+                return `https:${lastSrcsetUrl}`;
+            } else {
+                return imgElement.src;
+            }
         }, storeObj);
         return img;
     } catch (error) {
@@ -366,16 +454,17 @@ async function getImg(page, storeObj) {
 
 async function getPrice(page, storeObj) {
     try {
-        const price = await page.$eval(storeObj.selectors.price, (el) => {
+        const price = await page.$eval(storeObj.selectors.price, (el, storeObj) => {
             const sellPriceAttribute = el.getAttribute("data-sell-price");
 
             const priceText = el.innerText;
             const match = priceText.match(/R\$\s*([^\n]+)$/);
             if (match) {
                 return match[1];
+            } else {
+                return storeObj.name === "CDR" ? sellPriceAttribute.replace('.', ',') : priceText;
             }
-            return sellPriceAttribute.replace('.', ',');
-        });
+        }, storeObj);
         return parseDecimal(price);
     } catch (error) {
         console.error("Error getting price:", error);
