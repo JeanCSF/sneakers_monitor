@@ -1,4 +1,39 @@
-const onTest = true;
+const onTest = false;
+
+const proxyList = [
+    '170.254.99.210:8080',
+    '187.85.82.222:55676',
+    '189.85.82.38:3128',
+    '177.190.189.16:44443',
+    '177.137.227.246:128',
+    '201.91.82.155:3128',
+    '200.53.19.6:3128',
+    '138.122.82.145:8080',
+    '177.37.100.253:31288',
+    '200.7.118.68:666',
+    '45.232.79.0:9292',
+    '177.53.214.27:999',
+    '143.208.152.61:3180',
+    '191.179.216.84:8080',
+    '177.99.203.179:8080',
+    '186.250.25.230:55443',
+    '45.7.64.49:999',
+    '45.71.169.145:80',
+    '138.59.20.42:9999',
+    '177.93.45.154:999',
+    '177.38.10.15:8080',
+    '179.107.54.27:5566',
+    '192.141.196.129:8080',
+    '177.53.214.208:999',
+    '200.7.10.158:8080',
+    '187.1.57.206:20183',
+    '170.245.132.86:999',
+    '177.66.101.223:8024',
+    '177.93.45.156:999',
+    '45.235.46.94:8080',
+    '177.25.40.146:4343',
+];
+
 const { Sneaker: SneakerModel } = require("../../models/Sneaker");
 const { Decimal128 } = require("mongodb");
 
@@ -92,8 +127,10 @@ async function updateOrCreateSneaker(sneakerObj) {
                     console.log("Sneaker price changed.");
                 }
             } else {
-                await SneakerModel.create(sneakerObj);
-                console.log("Sneaker successfully added to database.");
+                if (sneakerObj.availableSizes.length >= 1) {
+                    await SneakerModel.create(sneakerObj);
+                    console.log("Sneaker successfully added to database.");
+                }
             }
         }
     } catch (error) {
@@ -225,7 +262,6 @@ async function getLinks(page, url, storeObj, term) {
         await page.goto(createSearchUrl(url, term), { waitUntil: 'domcontentloaded' });
         const newUrl = await page.url();
         await scrollPage(page);
-
 
         const links = await page.$$eval(storeObj.selectors.links, (containers, storeObj) => {
             if (storeObj.name === "RatusSkateshop") {
@@ -418,7 +454,7 @@ async function getImg(page, storeObj) {
 
 async function getPrice(page, storeObj) {
     try {
-        const price = await page.$eval(storeObj.selectors.price, (el) => {
+        const price = await page.$eval(storeObj.selectors.price, (el, storeObj) => {
             const sellPriceAttribute = el.getAttribute("data-sell-price");
 
             const priceText = el.innerText;
@@ -426,10 +462,9 @@ async function getPrice(page, storeObj) {
             if (match) {
                 return match[1];
             } else {
-                return priceText;
+                return storeObj.name === "CDR" ? sellPriceAttribute.replace('.', ',') : priceText;
             }
-            return sellPriceAttribute.replace('.', ',');
-        });
+        }, storeObj);
         return parseDecimal(price);
     } catch (error) {
         console.error("Error getting price:", error);

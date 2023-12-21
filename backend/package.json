@@ -20,8 +20,10 @@
     "mysql": "^2.18.1",
     "node-cron": "^3.0.3",
     "nodemon": "^3.0.1",
-    "puppeteer": "^21.5.2",
+    "puppeteer": "^21.6.1",
     "puppeteer-cluster": "^0.23.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "rand-user-agent": "^2.0.42",
     "random-useragent": "^0.5.0"
   },
