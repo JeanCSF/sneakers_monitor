@@ -411,13 +411,13 @@ async function getProductReference(page, storeObj, link) {
             const productReference = await page.$eval(storeObj.selectors.productReference, (productDescription) => {
                 if (productDescription) {
                     const text = productDescription.textContent;
-                    const match = text.match(/REF:\s+(\S+)/);
-                    return match ? match[1] : null;
+                    const match = text.includes('Modelo:') ? text.match(/Modelo:\s+(\S+)/) : text.match(/REF:\s*(\S+)/);
+                    return match ? match[1].toUpperCase() : null;
                 }
                 return null;
             });
 
-            return productReference.toUpperCase();
+            return productReference;
         }
 
         if (storeObj.name.toLowerCase().includes("wallsgeneralstore")) {
@@ -498,7 +498,7 @@ async function getPrice(page, storeObj) {
         const price = await page.$eval(storeObj.selectors.price, (el, storeObj) => {
             const sellPriceAttribute = el.getAttribute("data-sell-price");
 
-            const priceText = el.innerText;
+            const priceText = el.children.length > 0 ? el.children[0].innerText.trim() : el.innerText.trim();
             const match = priceText.match(/R\$\s*([^\n]+)$/);
             if (match) {
                 return match[1];

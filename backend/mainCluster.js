@@ -9,15 +9,15 @@ const allResultsSet = new Set();
 
 const urls = [
     'https://www.sunsetskateshop.com.br/',
-    // 'https://www.ostore.com.br/',
-    // 'https://www.wallsgeneralstore.com.br/',
-    // 'https://www.ratusskateshop.com.br/',
-    // 'https://www.maze.com.br/',
-    // 'https://www.sunika.com.br/',
-    // 'https://www.artwalk.com.br/',
-    // 'https://www.correderua.com.br/',
-    // 'https://www.gdlp.com.br/',
-    // 'https://www.lojavirus.com.br/',
+    'https://www.ostore.com.br/',
+    'https://www.wallsgeneralstore.com.br/',
+    'https://www.ratusskateshop.com.br/',
+    'https://www.maze.com.br/',
+    'https://www.sunika.com.br/',
+    'https://www.artwalk.com.br/',
+    'https://www.correderua.com.br/',
+    'https://www.gdlp.com.br/',
+    'https://www.lojavirus.com.br/',
     // 'https://youridstore.com.br/',
 ];
 
@@ -26,12 +26,12 @@ const storesObj = {
         name: 'SunsetSkateshop',
         baseUrl: 'https://www.sunsetskateshop.com.br/',
         selectors: {
-            links: '.products__list',
-            productReference: '.product__description',
+            links: '.products__item.ng-scope',
+            productReference: '.product__description.ng-scope',
             img: '.product__image-container',
             sneakerName: 'h2.product__title',
             price: 'h3.product__price',
-            availableSizes: 'label[ng-if^="]',
+            availableSizes: '.product__option label[ng-if="stock.items_number > 0"]',
             pagination: '',
         }
     },
@@ -174,8 +174,8 @@ const searchFor = [
     // 'reebok classic',
     // 'reebok club c',
     // 'vans old skool',
-    'vans authentic',
-    // 'vans sk8',
+    // 'vans authentic',
+    'vans sk8',
     // 'vans era',
     // 'vans ultrarange',
     // 'asics gel',
@@ -190,6 +190,16 @@ async function mainCluster() {
         puppeteerOptions: {
             // headless: "new",
             headless: false,
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-accelerated-2d-canvas',
+              '--disable-gpu',  
+              '--window-size=1366,768',
+              '--start-maximized',
+              '--no-first-run',
+            ],
             defaultViewport: {
                 width: 1366,
                 height: 768,
@@ -205,6 +215,7 @@ async function mainCluster() {
                 await processLink(page, url, storeObj);
             } catch (error) {
                 console.error(`Error processing ${url}:`, error.message);
+                console.error(error.stack);
             }
         });
 
