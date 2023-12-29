@@ -8,18 +8,46 @@ const { getLinks, processLink } = require('./src/utils/utils');
 const allResultsSet = new Set();
 
 const urls = [
+    'https://www.sunsetskateshop.com.br/',
+    'https://www.ostore.com.br/',
     'https://www.wallsgeneralstore.com.br/',
     'https://www.ratusskateshop.com.br/',
     'https://www.maze.com.br/',
     'https://www.sunika.com.br/',
     'https://www.artwalk.com.br/',
     'https://www.correderua.com.br/',
-    'https://www.lojavirus.com.br/',
     'https://www.gdlp.com.br/',
+    'https://www.lojavirus.com.br/',
     // 'https://youridstore.com.br/',
 ];
 
 const storesObj = {
+    sunsetskateshop: {
+        name: 'SunsetSkateshop',
+        baseUrl: 'https://www.sunsetskateshop.com.br/',
+        selectors: {
+            links: '.products__item.ng-scope',
+            productReference: '.product__description.ng-scope',
+            img: '.product__image-container',
+            sneakerName: 'h2.product__title',
+            price: 'h3.product__price',
+            availableSizes: '.product__option label[ng-if="stock.items_number > 0"]',
+            pagination: '',
+        }
+    },
+    ostore: {
+        name: 'Ostore',
+        baseUrl: 'https://www.ostore.com.br/',
+        selectors: {
+            links: 'span.price',
+            productReference: '.skuReference',
+            img: '#image',
+            sneakerName: '.productName',
+            price: '.skuBestPrice',
+            availableSizes: '.select-itens > div:not(.unavailable)',
+            pagination: '.resultado-busca-numero span.value',
+        }
+    },
     wallsgeneralstore: {
         name: 'WallsGeneralStore',
         baseUrl: 'https://www.wallsgeneralstore.com.br/',
@@ -128,40 +156,50 @@ const storesObj = {
 };
 
 const searchFor = [
-    'converse',
-    'fila',
-    'air force',
-    'adidas superstar',
-    'air max',
-    'air jordan',
-    'adidas forum',
-    'adidas samba',
-    'adidas gazelle',
-    'adidas campus',
-    'adidas ADI2000',
-    'puma suede',
-    'puma basket',
-    'puma 180',
-    'puma slipstream',
-    'reebok classic',
-    'reebok club c',
-    'vans old skool',
-    'vans authentic',
+    // 'converse',
+    // 'fila',
+    // 'air force',
+    // 'adidas superstar',
+    // 'air max',
+    // 'air jordan',
+    // 'adidas forum',
+    // 'adidas samba',
+    // 'adidas gazelle',
+    // 'adidas campus',
+    // 'adidas ADI2000',
+    // 'puma suede',
+    // 'puma basket',
+    // 'puma 180',
+    // 'puma slipstream',
+    // 'reebok classic',
+    // 'reebok club c',
+    // 'vans old skool',
+    // 'vans authentic',
     'vans sk8',
-    'vans era',
-    'vans ultrarange',
-    'asics gel',
-    'fila corda'
+    // 'vans era',
+    // 'vans ultrarange',
+    // 'asics gel',
+    // 'fila corda'
 ];
 
 async function mainCluster() {
     const cluster = await Cluster.launch({
         concurrency: Cluster.CONCURRENCY_CONTEXT,
-        maxConcurrency: 40,
+        maxConcurrency: 5,
         monitor: true,
         puppeteerOptions: {
-            headless: "new",
-            // headless: false,
+            // headless: "new",
+            headless: false,
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-accelerated-2d-canvas',
+              '--disable-gpu',  
+              '--window-size=1366,768',
+              '--start-maximized',
+              '--no-first-run',
+            ],
             defaultViewport: {
                 width: 1366,
                 height: 768,
@@ -177,6 +215,7 @@ async function mainCluster() {
                 await processLink(page, url, storeObj);
             } catch (error) {
                 console.error(`Error processing ${url}:`, error.message);
+                console.error(error.stack);
             }
         });
 
