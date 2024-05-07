@@ -116,7 +116,3 @@ Se você deseja contribuir com o projeto, siga estas etapas:
 3. Commit suas mudanças: `git commit -m 'Adicionando nova funcionalidade'`.
 4. Faça push para a branch: `git push origin feature/nova-funcionalidade`.
 5. Envie um pull request.
-
-## Licença
-
-Este projeto está licenciado sob a [MIT License](link_para_a_licenca).
