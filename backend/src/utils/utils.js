@@ -1,202 +1,44 @@
-const onTest = true;
+require("dotenv").config();
+const axios = require("axios");
 
-const proxyList = [
-    '170.254.99.210:8080',
-    '187.85.82.222:55676',
-    '189.85.82.38:3128',
-    '177.190.189.16:44443',
-    '177.137.227.246:128',
-    '201.91.82.155:3128',
-    '200.53.19.6:3128',
-    '138.122.82.145:8080',
-    '177.37.100.253:31288',
-    '200.7.118.68:666',
-    '45.232.79.0:9292',
-    '177.53.214.27:999',
-    '143.208.152.61:3180',
-    '191.179.216.84:8080',
-    '177.99.203.179:8080',
-    '186.250.25.230:55443',
-    '45.7.64.49:999',
-    '45.71.169.145:80',
-    '138.59.20.42:9999',
-    '177.93.45.154:999',
-    '177.38.10.15:8080',
-    '179.107.54.27:5566',
-    '192.141.196.129:8080',
-    '177.53.214.208:999',
-    '200.7.10.158:8080',
-    '187.1.57.206:20183',
-    '170.245.132.86:999',
-    '177.66.101.223:8024',
-    '177.93.45.156:999',
-    '45.235.46.94:8080',
-    '177.25.40.146:4343',
-];
+const { getSneakerTitle } = require("./titleFunctions");
+const { getCategories } = require("./categoryFunctions");
+const { getBrands } = require("./brandFunctions");
+const { getProductReference } = require("./referenceFunctions");
+const { getImg } = require("./imgFunctions");
+const { getPrice, getDiscountPrice } = require("./priceFunctions");
+const { getAvailableSizes } = require("./sizeFunctions");
+const { getColors } = require("./colorFunctions");
+const { getCodeFromStore } = require("./storeCodeFunctions");
+
 
 const { Sneaker: SneakerModel } = require("../../models/Sneaker");
-const { Decimal128 } = require("mongodb");
 
 const randomUserAgent = require('random-useragent');
-let randUserAgent;
-import('rand-user-agent').then(randUserAgentModule => {
-    randUserAgent = randUserAgentModule.default || randUserAgentModule.getRandom;
-});
-async function generateRandomUserAgent() {
-    const useRandomUserAgentLib = Math.random() < 2;
-    if (useRandomUserAgentLib) {
-        return randomUserAgent.getRandom((ua) => {
-            return ua.osName === "macOS" ||
-                ua.osName === "Windows" && ua.deviceType === "desktop" &&
-                ua.browserName === "Chrome" ||
-                ua.browserName === "Firefox" ||
-                ua.browserName === "Safari" ||
-                ua.browserName === "Edge";
-        });
-    } else {
-        return randUserAgent("desktop", "chrome", "windows", "macOS");
-    }
-}
 
 const ExcelJS = require("exceljs");
 const path = require("path");
 const workbook = new ExcelJS.Workbook();
 const worksheet = workbook.addWorksheet("Test Data");
-worksheet.addRow(["Store", "Product Reference", "Sneaker Name", "Current Price", "Discount Price", "Available Sizes", "Date", "Link", "Image"]);
+worksheet.addRow(["Store", "Product Reference", "Brand", "Sneaker Title", "Categories", "Colors", "Current Price", "Discount Price", "Available Sizes", "Date", "Link", "Image", "Code From Store"]);
 
-async function scrollPage(page) {
-    async function scrollToEnd(page) {
-        await page.evaluate(() => {
-            window.scrollTo(0, document.body.scrollHeight);
-        });
-    };
-
-    let previousHeight = 0;
-    while (true) {
-        await scrollToEnd(page);
-        await page.waitForTimeout(1000);
-        const currentHeight = await page.evaluate(
-            () => document.body.scrollHeight
-        );
-        if (currentHeight === previousHeight) {
-            break;
-        }
-        previousHeight = currentHeight;
-    }
-}
-
-function arraysEqual(arr1, arr2) {
-    if (arr1.length !== arr2.length) return false;
-    for (let i = 0; i < arr1.length; i++) {
-        if (arr1[i] !== arr2[i]) return false;
-    }
-    return true;
-}
-
-function parseDecimal(str) {
-    const cleanedStr = str.replace(/[^0-9.,]/g, '');
-    const dotDecimalStr = cleanedStr.replace(/\./g, '').replace(',', '.');
-    return new Decimal128(dotDecimalStr);
-}
-
-async function updateOrCreateSneaker(sneakerObj) {
-    const { productReference, store } = sneakerObj;
-    try {
-        if (onTest) {
-            if (sneakerObj.availableSizes.length >= 1) {
-                worksheet.addRow([sneakerObj.store, sneakerObj.productReference, sneakerObj.sneakerName, sneakerObj.currentPrice, sneakerObj.discountPrice, sneakerObj.availableSizes.join(', '), new Date().toLocaleString(), sneakerObj.srcLink, sneakerObj.img]);
-                const filePath = path.join(__dirname, "test_data.xlsx");
-                await workbook.xlsx.writeFile(filePath);
-                console.log(`Sneaker ${sneakerObj.sneakerName} added to test data: ${filePath}`);
-            } else {
-                console.log(`Sneaker ${sneakerObj.sneakerName} has no available sizes.`);
-            }
-        } else {
-            const existingSneaker = await SneakerModel.findOne({ store, productReference });
-            if (existingSneaker) {
-                if (!arraysEqual(existingSneaker.availableSizes, sneakerObj.availableSizes)) {
-                    existingSneaker.availableSizes = sneakerObj.availableSizes;
-                    await existingSneaker.save();
-                    console.log("Available sizes changed.");
-                }
-
-                if (Number(existingSneaker.currentPrice) !== Number(sneakerObj.currentPrice)) {
-                    existingSneaker.currentPrice = sneakerObj.currentPrice;
-                    existingSneaker.priceHistory.push({ price: sneakerObj.currentPrice, date: new Date(), });
-                    await existingSneaker.save();
-                    console.log("Sneaker price changed.");
-                }
-            } else {
-                if (sneakerObj.availableSizes.length >= 1) {
-                    await SneakerModel.create(sneakerObj);
-                    console.log("Sneaker successfully added to database.");
-                }
-            }
-        }
-    } catch (error) {
-        console.error("Unexpected error:", error);
-    }
-}
-
-function createSearchUrl(url, term) {
-    if (url.includes("correderua")) {
-        return `${url}buscar?q=${term.replace(/\s+/g, "+").toLowerCase()}`;
-    }
-
-    if (url.includes("gdlp")) {
-        return `${url}catalogsearch/result/?q=${term.replace(/\s+/g, "+").toLowerCase()}`;
-    }
-
-    if (url.includes("artwalk")) {
-        return `${url}${encodeURIComponent(term).toLowerCase()}?O=OrderByPriceASC&PS=24`;
-    }
-
-    if (url.includes("lojavirus")) {
-        return `${url}busca?busca=${term.replace(/\s+/g, "-").toLowerCase()}`;
-    }
-
-    if (url.includes("sunika")) {
-        return `${url}pesquisa?t=${term.replace(/\s+/g, "+").toLowerCase()}`;
-    }
-
-    if (url.includes("maze")) {
-        return `${url}busca?n=${encodeURIComponent(term).toLowerCase()}`;
-    }
-
-    if (url.includes("ratusskateshop")) {
-        return `${url}search/?q=${encodeURIComponent(term).toLowerCase()}`;
-    }
-
-    if (url.includes("wallsgeneralstore")) {
-        return `${url}loja/busca.php?loja=690339&palavra_busca=${term.replace(/\s+/g, "+").toLowerCase()}`;
-    }
-
-    if (url.includes("ostore")) {
-        return `${url}${encodeURIComponent(term).toLowerCase()}?O=OrderByReleaseDateDESC&PS=28`;
-    }
-
-    if (url.includes("sunsetskateshop")) {
-        return `${url}busca/${term.replace(/\s+/g, "-").toLowerCase()}`
-    }
-
-    console.error("Invalid URL:", url);
-    return url;
-}
-
-async function interceptRequests(page) {
+async function interceptRequests(page, storeName) {
     await page.setRequestInterception(true);
+
     page.on('request', (request) => {
-        if (
-            request.resourceType() === 'image' ||
+        if (request.resourceType() === 'image' ||
             request.resourceType() === 'font' ||
             request.resourceType() === 'video' ||
-            request.resourceType() === 'media'
-        ) {
+            request.resourceType() === 'media' ||
+            (request.resourceType() === 'stylesheet' &&
+                storeName !== 'WallsGeneralStore' &&
+                storeName !== 'RatusSkateshop')) {
             request.abort();
         } else {
             request.continue();
         }
     });
+
     page.on('dialog', async (dialog) => {
         if (dialog) {
             try {
@@ -208,331 +50,404 @@ async function interceptRequests(page) {
     });
 }
 
-async function getNumOfPages(page, storeName, storeSelectors) {
-    try {
-        switch (storeName) {
-            case "CDR":
-            case "LojaVirus":
-                return await page.evaluate((selectors) => {
-                    const links = document.querySelectorAll(selectors.pagination);
-                    if (links.length >= 2) {
-                        return parseInt(links[links.length - 2].innerText);
-                    }
-                    return null;
-                }, storeSelectors);
-
-            case "GDLP":
-                const totalGdlp = await page.evaluate((selectors) => {
-                    const element = document.querySelector(selectors.pagination);
-                    return element ? element.textContent.trim().split(' ')[2] : null;
-                }, storeSelectors);
-                return totalGdlp ? Math.ceil(totalGdlp / 40) : null;
-
-            case "Ostore":
-                const totalOstore = await page.$eval(storeSelectors.pagination, (totalElement) => {
-                    return totalElement ? parseInt(totalElement.textContent.trim()) : null;
-                });
-                return totalOstore ? Math.ceil(totalOstore / 28) : null;
-
-            default:
-                return null;
-        }
-    } catch (error) {
-        console.error("Error getting num of pages:", error);
-        console.error(error.stack);
+function arraysEqual(arr1, arr2) {
+    if (arr1.length !== arr2.length) return false;
+    for (let i = 0; i < arr1.length; i++) {
+        if (arr1[i] !== arr2[i]) return false;
     }
+    return true;
 }
 
-async function iteratePaginationLinks(page, pageNumbers, newUrl, storeObj, term) {
+async function updateOrCreateSneaker(sneakerObj) {
+    const { codeFromStore, store } = sneakerObj;
     try {
-        const newLinks = [];
-        for (let i = 2; i <= pageNumbers; i++) {
-            switch (storeObj.name) {
-                case "CDR":
-                case "LojaVirus":
-                    await page.setUserAgent(await generateRandomUserAgent());
-                    await page.goto(`${newUrl}?pagina=${i}`, { waitUntil: 'domcontentloaded' });
-                    break;
-
-                case "GDLP":
-                    await page.setUserAgent(await generateRandomUserAgent());
-                    await page.goto(`${storeObj.baseUrl}search/page/${i}?q=${term.replace(/\s+/g, "+").toLowerCase()}`, { waitUntil: 'load' });
-                    break;
-
-                case "Ostore":
-                    await page.setUserAgent(await generateRandomUserAgent());
-                    await page.goto(`${newUrl}#${i}`, { waitUntil: 'networkidle2' });
-                    await page.reload();
-                    await page.waitForSelector('.pace-done');
-                    break;
-
-                default:
-                    break;
+        if (process.env.ENVIRONMENT === "dev") {
+            if (sneakerObj.availableSizes.length >= 1) {
+                worksheet.addRow([sneakerObj.store, sneakerObj.productReference, sneakerObj.brands.join(', '), sneakerObj.sneakerTitle, sneakerObj.categories.join(', '), sneakerObj.colors.join(', '), sneakerObj.currentPrice, sneakerObj.discountPrice, sneakerObj.availableSizes.join(', '), new Date().toLocaleString(), sneakerObj.srcLink, sneakerObj.img, sneakerObj.codeFromStore]);
+                const filePath = path.join(__dirname, "test_data/test_data.xlsx");
+                await workbook.xlsx.writeFile(filePath);
+                console.log(`${sneakerObj.sneakerTitle} added to test data`);
+            } else {
+                console.log(`${sneakerObj.sneakerTitle} has no available sizes.`);
             }
-
-            const links = await page.$$eval(storeObj.selectors.links, (containers) => {
-                return containers.map(container => container.querySelector("a").href);
-            });
-
-            newLinks.push(...links);
-        }
-        return newLinks;
-    } catch (error) {
-        console.error("Error iterating links from pagination:", error);
-        console.error(error.stack);
-    }
-}
-
-async function getLinks(page, url, storeObj, term) {
-    try {
-        await page.setUserAgent(await generateRandomUserAgent());
-        await interceptRequests(page);
-        await page.goto(createSearchUrl(url, term), { waitUntil: 'domcontentloaded' });
-        const newUrl = await page.url();
-        await scrollPage(page);
-
-        const links = await page.$$eval(storeObj.selectors.links, (containers, storeObj) => {
-            if (storeObj.name === "RatusSkateshop") {
-                return containers
-                    .filter(container => container.querySelector('.item-actions.m-top-half'))
-                    .map(container => container.querySelector("a").href);
-            }
-            return containers.map(container => container.querySelector("a").href);
-        }, storeObj);
-
-        const pageNumbers = await getNumOfPages(page, storeObj.name, storeObj.selectors);
-        if (pageNumbers !== null && pageNumbers > 1) {
-            const newLinks = await iteratePaginationLinks(page, pageNumbers, newUrl, storeObj, term);
-            links.push(...newLinks);
-        }
-
-        if (links.length !== 0) {
-            console.log(`Found ${links.length} links for ${term} on ${storeObj.name}`);
-            return links;
         } else {
-            console.error(`No links found for ${term} on ${storeObj.name}`);
+            const existingSneaker = await SneakerModel.findOne({ store, codeFromStore });
+            if (existingSneaker) {
+                if (!arraysEqual(existingSneaker.availableSizes, sneakerObj.availableSizes) && sneakerObj.availableSizes.length < 1) {
+                    await SneakerModel.deleteOne({ _id: existingSneaker._id });
+                    console.log(`No more available sizes. ${sneakerObj.sneakerTitle} removed from database.`);
+                    return;
+                }
+
+                if (!arraysEqual(existingSneaker.availableSizes, sneakerObj.availableSizes) && sneakerObj.availableSizes.length >= 1) {
+                    existingSneaker.availableSizes = sneakerObj.availableSizes;
+                    await existingSneaker.save();
+                    console.log("Available sizes changed.");
+                    return;
+                }
+
+                if (Number(existingSneaker.currentPrice) !== Number(sneakerObj.currentPrice)) {
+                    existingSneaker.currentPrice = sneakerObj.currentPrice;
+                    existingSneaker.priceHistory.push({ price: sneakerObj.currentPrice, date: new Date(), });
+                    await existingSneaker.save();
+                    console.log(`${sneakerObj.sneakerTitle} price changed.`);
+                    return;
+                }
+
+                console.log(`${sneakerObj.sneakerTitle} is already in the database and has no changes.`);
+                return;
+            } else {
+                if (sneakerObj.availableSizes.length >= 1) {
+                    const invalidCategory = sneakerObj.categories.length > 1 && sneakerObj.categories.some(category => {
+                        const lowerCaseCategory = category.toLowerCase();
+                        return lowerCaseCategory.includes("roupas") ||
+                            lowerCaseCategory.includes("bola") ||
+                            lowerCaseCategory.includes("saia") ||
+                            lowerCaseCategory.includes("meias") ||
+                            lowerCaseCategory.includes("gorros");
+                    });
+
+
+                    if (invalidCategory) {
+                        console.log(`${sneakerObj.sneakerTitle} is not a sneaker.`);
+                    } else {
+                        await SneakerModel.create(sneakerObj);
+                        console.log(`${sneakerObj.sneakerTitle} added to database.`);
+                    }
+                }
+            }
         }
     } catch (error) {
-        console.error("Error getting links:", error);
-        console.error(error.stack);
-        return [];
+        console.error("Unexpected error:", error);
     }
 }
 
-async function processLink(page, link, storeObj) {
+async function generateRandomUserAgent() {
+    let userAgent;
+
+    do {
+        userAgent = randomUserAgent.getRandom();
+    } while (problematicUserAgents(userAgent));
+
+    return userAgent;
+}
+
+function problematicUserAgents(userAgent) {
+    const problematicPatterns = [
+        /spider/i,
+        /scraper/i,
+        /msnbot/i,
+        /wget/i,
+        /crawler/i,
+        /bot/i,
+        /bots/i,
+        /mobi/i,
+        /p1000m/i,
+        /i800/i,
+        /20100101/i,
+        /libwww/i,
+        /java/i,
+        /peach/i,
+        /python/i,
+        /adobe/i,
+        /download/i,
+        /downloader/i,
+        /superbot/i,
+        /webcopier/i,
+        /wget/i,
+        /playstation/i,
+        /wii/i,
+        /qupzilla/i,
+        /htmlparser/i,
+        /validator/i,
+        /facebook/i,
+        /grub/i,
+        /itunes/i,
+        /url/i,
+        /roku/i,
+        /tv/i,
+        /search/i,
+        /jeeves/i,
+        /adsbot/i,
+        /googlebot/i,
+        /yandex/i,
+        /yahoo/i,
+        /facebookexternalhit/i,
+        /alexa/i,
+        /beos/i,
+        /os\/2/i,
+        /bloglines/i,
+        /blackberry/i,
+        /nokia/i,
+        /vodafone/i,
+        /docomo/i,
+        /lumia/i,
+        /khtml/i,
+        /galeon/i,
+        /links/i,
+        /win95/i,
+        /msie/i,
+        /sonyericsson/i,
+        /sony ericsson/i,
+        /presto/i,
+        /jaunty/i,
+        /seamonkey/i,
+        /nextreaming/i,
+        /kindle/i,
+        /lg/i,
+        /minefield/i,
+        /emailwolf/i,
+        /palmos/i,
+        /xenu/i,
+        /sunos/i,
+        /offline/i,
+        /feedfetcher/i,
+        /mediapartners/i,
+        /konqueror/i,
+        /uzbl/i,
+        /mot-/i,
+        /iceape/i,
+        /w3m/i,
+        /epiphany/i,
+        /minimo/i,
+        /portalmmm/i,
+        /sec-/i,
+        /windows xp/i,
+        /midori/i,
+        /openbsd/i,
+        /trident/i,
+        /9a3pre/i,
+        /iceweasel/i,
+        /avant/i,
+        /shadowfox/i,
+        /samsung-/i,
+        /matbjs/i,
+        /debian/i,
+        /20110623/i,
+        /20110303/i,
+        /2009042316/i,
+        /netsurf/i,
+        /fennec/i,
+        /karmic/i,
+        /nook/i,
+        /20100907/i,
+        /20120813/i,
+        /20091107/i,
+        /dillo/i,
+        /clr/i,
+        /swiftfox/i,
+        /20110622/i,
+        /namoroka/i,
+        /gregarius/i,
+        /freebsd/i,
+        /irix/i,
+        /phoenix/i,
+        /netscape/i,
+        /\[en\]/i,
+        /csscheck/i,
+        /opera\/9\.25/i,
+        /headlesschrome/i,
+        /20130401/i,
+        /20121129/i,
+        /20040614/i,
+        /helena/i,
+        /20120403211507/i,
+        /netbsd/i,
+        /i686/i,
+        /gentoo/i,
+    ];
+
+    return problematicPatterns.some(pattern => pattern.test(userAgent.toLowerCase()));
+}
+
+async function getSunsetLinks(url) {
+    const term = url.split("/").pop();
+    const linksSet = new Set();
+
     try {
-        await page.setUserAgent(await generateRandomUserAgent());
-        await interceptRequests(page);
+        const reqURL = 'https://api.sunsetskateshop.com.br:8443/public/products/getBrandSize/0/183';
 
-        const srcLink = link;
-        const store = storeObj.name;
-        await Promise.all([
-            page.goto(link, { waitUntil: storeObj.name === "GDLP" ? "load" : "domcontentloaded" }),
-            page.waitForSelector(storeObj.selectors.sneakerName),
-            page.waitForSelector(storeObj.selectors.img),
-            page.waitForSelector(storeObj.selectors.price),
-        ]);
-        await scrollPage(page);
-        storeObj.name === "RatusSkateshop" ? await page.waitForTimeout(3000) : null;
-        const sneakerName = await getSneakerName(page, storeObj);
-        const productReference = await getProductReference(page, storeObj, link);
-        const img = await getImg(page, storeObj);
-        const price = await getPrice(page, storeObj);
-        const discountPrice = await getDiscountPrice(page, storeObj);
-        const availableSizes = await getAvailableSizes(page, storeObj);
+        const data = {
+            category: "calcados",
+            brand: term
+        }
 
-        const sneakerObj = {
-            srcLink,
-            productReference,
-            store,
-            img,
-            sneakerName,
-            currentPrice: price,
-            discountPrice: discountPrice,
-            priceHistory: [{ price, date: new Date() }],
-            availableSizes,
+        const storeData = {
+            "_id": "57a1e6130607512a23cdf437",
+            "store": "SUNSET SKATESHOP",
+            "cnpj": "10604561000153"
         };
 
-        const searchTerm = ((link.match(/\/([^\/]+)$/) || [])[1] || '').split('-').slice(0, 2).join(' ');
-        if ((availableSizes !== null && availableSizes.length !== 0) &&
-            !sneakerName.toLowerCase().includes('calça') ||
-            !sneakerName.toLowerCase().includes('camisa') ||
-            !sneakerName.toLowerCase().includes('camiseta') ||
-            !sneakerName.toLowerCase().includes('bolsa') ||
-            sneakerName.toLowerCase().includes(searchTerm)
-        ) {
-            await updateOrCreateSneaker(sneakerObj);
-        } else {
-            console.log(`Not a sneaker or not available sizes: ${sneakerName} / ${availableSizes}`);
-        }
+        const headers = {
+            'X-Store-Data': JSON.stringify(storeData),
+            'Content-Type': 'application/json'
+        };
+
+        const response = await axios.post(reqURL, data, { headers });
+        const responseData = response.data;
+        responseData.data.forEach(item => item.total_itens > 0 && linksSet.add(`https://www.sunsetskateshop.com.br/produto/${item.slugname}`));
+
+        const links = Array.from(linksSet);
+        return links;
     } catch (error) {
-        console.error("Error processing link:", error);
-        console.error(error.stack);
+        console.error("Error in getSunsetLinks:", error);
     }
 }
 
-async function getAvailableSizes(page, storeObj) {
-    try {
-        const availableSizesSet = new Set();
-        const availableSizes = await page.$$eval(storeObj.selectors.availableSizes, (els) => {
-            return els
-                .filter(el => !el.classList.contains('item_unavailable') && !el.classList.contains('disabled'))
-                .map((el) => {
-                    const sizeText = el.innerText.trim();
-                    const numericSize = parseFloat(sizeText.replace(',', '.'));
-                    return !isNaN(numericSize) ? numericSize : null;
-                })
-                .filter((size) => size !== null);
-        });
-        availableSizes.forEach(size => availableSizesSet.add(size));
+async function getLinks(getLinksObj) {
+    const { page, url, storeObj, currentPage } = getLinksObj;
+    let retries = 0;
+    const maxRetries = 20;
+    let userAgent
 
-        return [...availableSizesSet];
+    while (retries < maxRetries) {
+        try {
 
-    } catch (error) {
-        console.error("Error getting available sizes:", error);
-        console.error(error.stack);
-        return [];
-    }
-}
+            if (storeObj.name === "SunsetSkateshop") {
+                const links = await getSunsetLinks(url)
 
-async function getSneakerName(page, storeObj) {
-    try {
-        const sneakerName = await page.$eval(storeObj.selectors.sneakerName, (el) => el.innerText.trim());
-        return sneakerName;
-    } catch (error) {
-        console.error("Error getting sneaker name:", error);
-        console.error(error.stack);
-    }
-}
-
-async function getProductReference(page, storeObj, link) {
-    try {
-        if (storeObj.name.toLowerCase().includes("sunsetskateshop")) {
-            const productReference = await page.$eval(storeObj.selectors.productReference, (productDescription) => {
-                if (productDescription) {
-                    const text = productDescription.textContent;
-                    const match = text.includes('Modelo:') ? text.match(/Modelo:\s+(\S+)/) : text.match(/REF:\s*(\S+)/);
-                    return match ? match[1].toUpperCase() : null;
+                if (links.length > 0) {
+                    console.log(`Found ${links.length} links in ${url}`);
+                    return links;
+                } else {
+                    console.log(`No links found in ${url}`);
+                    return [];
                 }
-                return null;
-            });
-
-            return productReference;
-        }
-
-        if (storeObj.name.toLowerCase().includes("wallsgeneralstore")) {
-            const match = link.match(/\/([^\/]+)\/?$/);
-            if (match) {
-                return `${storeObj.name}: ${match[1].toUpperCase()}`;
             }
-        }
 
-        if (storeObj.name.toLowerCase().includes("ratusskateshop")) {
-            const match = link.match(/\/([^\/]+)\/?$/);
-            if (match) {
-                return `${storeObj.name}: ${match[1].toUpperCase()}`;
+            if (currentPage > 1) {
+                await page.setUserAgent(await generateRandomUserAgent());
+                await page.goto(url, { waitUntil: "domcontentloaded" });
+                storeObj.name === "Ostore" ? await page.waitForTimeout(2000) : null;
             }
-        }
 
-        if (storeObj.name.toLowerCase().includes("sunika")) {
-            const match = link.match(/\/[^/]+-([^/]+)$/);
-            if (match) {
-                return match[1].toUpperCase();
+            userAgent = await page.evaluate(() => navigator.userAgent);
+            const blocked =
+                await page.waitForSelector('#cf-wrapper', { timeout: 3000 }).catch(e => { }) ||
+                await page.waitForSelector('h4.please', { timeout: 3000 }).catch(e => { }) ||
+                await page.waitForSelector('.descr-reload', { timeout: 3000 }).catch(e => { });
+            if (blocked) {
+                throw new Error(`\nBlocked User Agent: ${userAgent}`);
             }
-        }
 
-        if (storeObj.name.toLowerCase().includes("lojavirus")) {
-            const productReference = await page.$eval(storeObj.selectors.productReference, (el) => {
-                const match = el.innerText.match(/\b([A-Za-z0-9-]+)\b$/);
-                return match ? match[1] : el.innerText;
-            })
-            return productReference.toUpperCase();
-        }
-
-        if (storeObj.name.toLowerCase().includes("maze")) {
-            const productReference = await page.$eval(storeObj.selectors.productReference, (el) => {
-                const match = el.innerText.match(/:(.*?)\s*$/);
-                return match ? match[1].trim() : el.innerText;
-            });
-            return productReference.toUpperCase();
-        }
-
-        const productReference = await page.$eval(storeObj.selectors.productReference, (el) => el.innerText);
-        return productReference.toUpperCase();
-    } catch (error) {
-        console.error("Error getting product reference:", error);
-        console.error(error.stack);
-    }
-}
-
-async function getImg(page, storeObj) {
-    try {
-        const img = await page.$eval(storeObj.selectors.img, (el, storeObj) => {
-            if (storeObj.name === "Maze") {
-                const aElement = el.querySelector("a").href;
-                return aElement;
-            }
-            const imgElement = el.querySelector("img");
-            const srcset = imgElement.getAttribute("srcset");
-
-            if (srcset) {
-                const srcsetItemArray = srcset.split(',').map(item => item.trim());
-                const lastSrcsetItem = srcsetItemArray[srcsetItemArray.length - 1];
-
-                const lastSrcsetUrl = lastSrcsetItem.split(' ')[0];
-
-                return `https:${lastSrcsetUrl}`;
-            } else {
-                return imgElement.src;
-            }
-        }, storeObj);
-        return img;
-    } catch (error) {
-        console.error("Error getting img:", error);
-        console.error(error.stack);
-    }
-}
-
-async function getPrice(page, storeObj) {
-    try {
-        const price = await page.$eval(storeObj.selectors.price, (el, storeObj) => {
-            const sellPriceAttribute = el.getAttribute("data-sell-price");
-
-            const priceText = el.children.length > 0 ? el.children[0].innerText.trim() : el.innerText.trim();
-            const match = priceText.match(/R\$\s*([^\n]+)$/);
-            if (match) {
-                return match[1];
-            } else {
-                return storeObj.name === "CDR" ? sellPriceAttribute.replace('.', ',') : priceText;
-            }
-        }, storeObj);
-        return parseDecimal(price);
-    } catch (error) {
-        console.error("Error getting price:", error);
-        console.error(error.stack);
-    }
-}
-
-async function getDiscountPrice(page, storeObj) {
-    try {
-        const discountPrice = storeObj.name.toLowerCase().includes("cdr")
-            ? await page.$eval("span.desconto-a-vista strong", (el) => {
-                const priceText = el.innerText;
-                const match = priceText.match(/R\$\s*([^\n]+)$/);
-                if (match) {
-                    return match[1];
+            const links = await page.$$eval(storeObj.selectors.links, (containers, storeObj) => {
+                if (storeObj.name === "Netshoes") {
+                    return containers
+                        .filter(container => !container.querySelector('a.fallback-btn'))
+                        .map(container => container?.href.replace(',', ''));;
                 }
-                return null;
-            })
-            : null;
-        return discountPrice ? parseDecimal(discountPrice) : discountPrice;
-    } catch (error) {
-        console.error("Error getting discount price:", error);
-        console.error(error.stack);
+
+                if (storeObj.name === "RatusSkateshop") {
+                    return containers
+                        .filter(container => container.querySelector('.item-actions.m-top-half'))
+                        .map(container => container.querySelector("a")?.href.replace(',', ''));
+                }
+
+                if (storeObj.name === "Sunika") {
+                    return containers
+                        .map(container => `${container.querySelector("a")?.href.replace(',', '')}`);
+                }
+
+                return containers
+                    .filter(container => !container.querySelector('.fbits-spot-indisponivel'))
+                    .map(container => container.querySelector("a")?.href.replace(',', ''));
+            }, storeObj);
+
+            if (links.length > 0) {
+                console.log(`Found ${links.length} links in ${url}`);
+                return links;
+            } else {
+                console.log(`No links found in ${url}`);
+                return [];
+            }
+        } catch (error) {
+            retries++;
+            console.log(`
+            \nError getting links from: ${url}
+            \nError: ${error}
+            \nUser Agent: ${userAgent}`);
+        }
     }
+    throw new Error(`Failed to get links after ${maxRetries} retries`);
+}
+
+async function processLink(processLinkObj) {
+    const { page, url, storeObj } = processLinkObj;
+    let retries = 0;
+    const maxRetries = 20;
+    let userAgent
+
+    while (retries < maxRetries) {
+        try {
+            await page.setUserAgent(await generateRandomUserAgent());
+            await page.goto(url, { waitUntil: storeObj.name !== "Sunika" ? "load" : "domcontentloaded" });
+
+            userAgent = await page.evaluate(() => navigator.userAgent);
+            const blocked =
+                await page.waitForSelector('#cf-wrapper', { timeout: 3000 }).catch(e => { }) ||
+                await page.waitForSelector('h4.please', { timeout: 3000 }).catch(e => { }) ||
+                await page.waitForSelector('.descr-reload', { timeout: 3000 }).catch(e => { });
+            if (blocked) {
+                throw new Error(`\nBlocked User Agent: ${userAgent}`);
+            }
+
+            const srcLink = url
+            const store = storeObj.name.toUpperCase();
+            const sneakerTitle = await getSneakerTitle({ page, storeObj });
+            const brands = await getBrands(sneakerTitle);
+            const categories = await getCategories({ page, sneakerTitle, storeObj, brands });
+            const productReference = await getProductReference({ page, storeObj, brands, sneakerTitle });
+            const img = await getImg({ page, storeObj, productReference, sneakerLink: srcLink });
+            const price = await getPrice({ page, storeObj });
+            const discountPrice = await getDiscountPrice({ page, storeObj });
+            const availableSizes = await getAvailableSizes({ page, storeObj });
+            const colors = await getColors({ page, storeObj, brands, sneakerTitle, productReference });
+            const codeFromStore = await getCodeFromStore({ page, url, storeObj });
+
+            const sneakerObj = {
+                srcLink,
+                productReference,
+                store,
+                img,
+                sneakerTitle,
+                categories,
+                brands,
+                colors,
+                currentPrice: price,
+                discountPrice: discountPrice,
+                priceHistory: [{ price, date: new Date() }],
+                availableSizes,
+                codeFromStore
+            };
+
+            if ((availableSizes !== null && availableSizes.length > 0) &&
+                !sneakerTitle.toLowerCase().includes('calça') ||
+                !sneakerTitle.toLowerCase().includes('camisa') ||
+                !sneakerTitle.toLowerCase().includes('camiseta') ||
+                !sneakerTitle.toLowerCase().includes('bolsa')) {
+                await updateOrCreateSneaker(sneakerObj);
+
+                storeObj.name === "CDR" ? await page.waitForTimeout(5000) : null;
+                return;
+            } else {
+                console.log(`Not a sneaker or not available sizes: ${sneakerTitle} / ${availableSizes}`);
+                return;
+            }
+        } catch (error) {
+            storeObj.name === "CDR" ? await page.waitForTimeout(5000) : null;
+            retries++;
+            console.log(`
+            \nError processing link: ${url}
+            \nError: ${error}
+            \nUser Agent: ${userAgent}`);
+        }
+    }
+    throw new Error(`Failed to process link after ${maxRetries} retries \nUser agent: ${userAgent}`);
 }
 
 module.exports = {
     getLinks,
     processLink,
+    interceptRequests,
+    generateRandomUserAgent,
 };
