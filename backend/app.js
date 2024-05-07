@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const app = express();
@@ -10,17 +11,17 @@ app.use(cors());
 app.use(express.json());
 
 const conn = require("./db/conn");
-conn();
+process.env.ENVIRONMENT === "prod" && conn();
 
 const routes = require("./routes/router");
 
-app.use("/api", routes);
+app.use("/", routes);
 
-app.listen(process.env.PORT || 3000, () => {
-    console.log('servidor ok');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`server running on port ${PORT}`);
 });
 
-const timeGapInMinutes = "*/2 * * * *";
 const timeGapInHours = "0 */6 * * *";
 
 const runScrapingScripts = async () => {
@@ -31,13 +32,17 @@ const runScrapingScripts = async () => {
         console.error('Erro na execução inicial dos scripts:', error);
     }
 };
-runScrapingScripts();
 
-cron.schedule(timeGapInHours, async () => {
-    try {
-        await Promise.allSettled([runScrapingScripts()]);
-        console.log('Script de scraping concluído com sucesso');
-    } catch (error) {
-        console.error('Erro ao executar o script de scraping:', error);
-    }
-});
+runScrapingScripts();
+if (process.env.ENVIRONMENT === "dev") {
+
+    cron.schedule(timeGapInHours, async () => {
+        try {
+            runScrapingScripts();
+            console.log('Script de scraping concluído com sucesso');
+        } catch (error) {
+            console.error('Erro ao executar o script de scraping:', error);
+        }
+    });
+}
+
