@@ -7,6 +7,8 @@ on:
 
 jobs:
   build:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     name: Build and Push
     steps:
@@ -22,31 +24,6 @@ jobs:
         run: |
           cd frontend
           npm run build
-
-      - name: Permissions
-        uses: actions/github-script@v4
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.repos.setBranchProtection({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              branch: 'build',
-              enforce_admins: true,
-              required_status_checks: null,
-              restrictions: null,
-              required_pull_request_reviews: {
-                dismissal_restrictions: {
-                  users: [],
-                  teams: []
-                },
-                dismiss_stale_reviews: true,
-                require_code_owner_reviews: false,
-                required_approving_review_count: 1
-              },
-              allow_deletions: true,
-              allow_force_pushes: true
-            })
 
       - name: Push
         uses: s0/git-publish-subdir-action@develop
