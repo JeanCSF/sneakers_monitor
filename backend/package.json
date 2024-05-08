@@ -25,5 +25,8 @@
     "random-useragent": "^0.5.0",
     "swagger-ui-express": "^5.0.0"
   },
-  "description": ""
+  "description": "",
+  "engines": {
+    "node": "20.x"
+  }
 }
