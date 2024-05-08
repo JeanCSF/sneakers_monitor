@@ -1,298 +1,4 @@
-const { removeAccents } = require('./stringManipulation');
-
 const colorsRegex = /(gum4|colorido|vtgi|wshp|ght|grethr|borang|owhite|mork|astral glow|mesa|storm|surf|pantone|panton|animal pack|animal print|patchwork|castanho|colorblock|canvas cobblestone|liquify avocado|board|camel|mesclado|mesc|malbec|camu|camuflado|mrsm|marshmallow|checkerboard|checkerbo|check|chckrb|chckbrd|ice|clowhi|crewht|crywht|ftwwht|cwhite|all white|true white|truewhite|off white|raw white|glow in the dark|dark grey|dark olive|sidestripeblack|pirate black|black contrast|cblack|black carbon|faux black|all black|skin black|forged iron|mineral gray|frost gray|frost|vaporous gray|city grey|athletic grey|cinza esc|cinza claro|tons de cinza|arctic|moonlight blue|crystal blue|navy blue|dress blues|grigio escuro|summit gold|june bag|dark purple|plum purple|multi|multicolor|pb|uv|reflect|reflex|reflective|refletivo|reflection|furtacor|camo|battleship white|natural white|white|wht|nuvem|egret|creme|bc bauni|cream|buttercream|chantilly|branco|alloy|bc\.neve|bco neve|sea salt|birch|perola|pearl|gelo|prata|silver|notorio|black|latex|ltx|preto|pto carvao|blk|gum|rubber|ivory|grey|glacier|talc|cinza|nimbus|magnet|iron|cz outono|tbwf|cz nuv|rock|eclipse|grafite|graphite|dark pewter|chumbo|grefiv|sand|areia|quarry|rosa claro|rosa|strawberry latte|stone blush knit|blush|rose|rosê|pink|chicle|berry|pebble|azul|midnight|denim|cobalt|nindig|heather|capri|sky|lago drive|tiffany|ciano|cyan|turquesa|acqua|aquatic|algiers blue|blue|prloin|indigo|canvas stormy weather|tecind|royal|dark navy|navy|naval|marinho|salute|lilás|lilac|aster|lavander|roxo|purple|salmão|prairie|haze coral|athletic red|racing red|mineral red|red|actmar|vermelho|verm\.esc|boltred|tinto|bordo|new khaki|khaki|workwear|café|cafe|ocre|fawn|whisky|caqui|deserto|yellow|yellowray|goldenglow|amarelo ouro|amarelo|angora|gold|goldbeam|dijon|colmeia|narcissus|verde limão|verde|fresh mint|esmerald|neon|acid buzz|halfgreen|dark green|dark moss|green|prlogr|lime|teal|floresta|fatigue|oliva|mistyc|misty|olive|orange|harvest-pumpkin|harvest|vm tel|laranja|rust|alaska|mostarda|mustard|brown|maroon|mar|marrom|earth strata|brostr|mel queimado|glazed ginger|demitasse|cork|caramelo|caramel|butternut|root beer|chipmunk|bege claro|bege|beige|linen|hay|dftw|dune|amêndoa|pecan|lbrown|vinho|cherry|mulberry|bwt|byo|olv|wlm|kkg|xkwr|bcm|hdv|xswb|wbk|gb2|abb|xccn|wtk|hbw|blg|blw|bbw|bwb|dn1|xskb|nwd|xkcc|wlk|xskr|glored|selubl)/ig;
-
-const colorsMap = {
-    "uv": ["UV"],
-    "gum": ["GUM"],
-    "rubber": ["GUM"],
-    "gum4": ["GUM"],
-    "glow in the dark": ["GLOW IN THE DARK"],
-    "colorblock": ["COLORBLOCK"],
-    "patchwork": ["PATCHWORK"],
-    "pantone": ["PANTONE"],
-    "panton": ["PANTONE"],
-    "mesclado": ["MESCLADO"],
-    "mesc": ["MESCLADO"],
-    "colorido": ["MULTICOLORIDO"],
-    "multi": ["MULTICOLORIDO"],
-    "multicolor": ["MULTICOLORIDO"],
-    "multicolorido": ["MULTICOLORIDO"],
-    "castanho": ["BRANCO", "MULTICOLORIDO"],
-    "animal pack": ["ANIMAL PRINT"],
-    "animal print": ["ANIMAL PRINT"],
-    "quadriculado": ["QUADRICULADO"],
-    "chckrb": ["QUADRICULADO"],
-    "checkerbo": ["QUADRICULADO"],
-    "chckbrd": ["QUADRICULADO"],
-    "checkerboard": ["QUADRICULADO"],
-    "check": ["QUADRICULADO"],
-    "furtacor": ["FURTACOR"],
-    "furta cor": ["FURTACOR"],
-    "refletivo": ["REFLETIVO"],
-    "reflect": ["REFLETIVO"],
-    "reflective": ["REFLETIVO"],
-    "reflex": ["REFLETIVO"],
-    "reflection": ["PRETO", "BRANCO"],
-    "frost": ["PRETO", "CINZA"],
-    "camo": ["CAMUFLADO"],
-    "camu": ["CAMUFLADO"],
-    "off white": ["CREME"],
-    "owhite": ["CREME"],
-    "bc bauni": ["CREME"],
-    "bc baun": ["CREME"],
-    "crewht": ["CREME"],
-    "buttercream": ["CREME"],
-    "chantilly": ["CREME"],
-    "marshmallow": ["CREME"],
-    "mrsm": ["CREME"],
-    "creme": ["CREME"],
-    "cream": ["CREME"],
-    "ivory": ["CREME"],
-    "perola": ["PÉROLA"],
-    "pearl": ["PÉROLA"],
-    "pb": ["PRETO", "BRANCO"],
-    "sidestripeblack": ["PRETO", "BRANCO"],
-    "workwear": ["KHAKI", "BEGE", "MARROM"],
-    "astral glow": ["BRANCO", "AZUL TURQUESA", "CINZA", "ROXO"],
-    "mesa": ["CARAMELO", "LARANJA", "ANIMAL PRINT", "GUM"],
-    "storm": ["BEGE", "LARANJA", "AZUL", "VERDE"],
-    "alaska": ["PRETO", "AZUL CLARO"],
-    "hongo bros": ["CINZA", "AZUL", "AMARELO"],
-    "shanahan importado": ["CINZA", "AZUL", "BRANCO"],
-    "verona slip prm": ["PRETO"],
-    "board": ["CREME", "LILÁS", "PRATA"],
-    "mork": ["CREME", "CINZA", "PRATA"],
-    "ltx": ["LATEX"],
-    "latex": ["LATEX"],
-    "blk": ["PRETO"],
-    "cblack": ["PRETO"],
-    "ght": ["PRETO"],
-    "pto carvao": ["PRETO"],
-    "blackout": ["PRETO"],
-    "preto": ["PRETO"],
-    "scuba": ["PRETO"],
-    "nomade essencial": ["PRETO"],
-    "skate hockey": ["PRETO"],
-    "original 3": ["PRETO"],
-    "black contrast": ["PRETO"],
-    "black carbon": ["PRETO"],
-    "black teal": ["PRETO"],
-    "faux black": ["PRETO"],
-    "skin black": ["PRETO"],
-    "all black": ["PRETO"],
-    "black": ["PRETO"],
-    "notorio": ["PRETO"],
-    "branco": ["BRANCO"],
-    "bc.neve": ["BRANCO"],
-    "alloy": ["BRANCO"],
-    "bco neve": ["BRANCO"],
-    "sea salt": ["BRANCO"],
-    "orquidea": ["BRANCO"],
-    "birch": ["BRANCO"],
-    "wht": ["BRANCO"],
-    "clowhi": ["BRANCO"],
-    "crywht": ["BRANCO"],
-    "cwhite": ["BRANCO"],
-    "ftwwht": ["BRANCO"],
-    "natural white": ["BRANCO"],
-    "battleship white": ["BRANCO"],
-    "all white": ["BRANCO"],
-    "raw white": ["BRANCO"],
-    "true white": ["BRANCO"],
-    "truewhite": ["BRANCO"],
-    "ice": ["BRANCO"],
-    "white": ["BRANCO"],
-    "city grey": ["CINZA"],
-    "frost gray": ["CINZA"],
-    "athletic grey": ["CINZA"],
-    "quarry": ["CINZA"],
-    "magnet": ["CINZA"],
-    "cz outono": ["CINZA"],
-    "tons de cinza": ["CINZA"],
-    "cinza claro": ["CINZA CLARO"],
-    "cz nuv": ["CINZA CLARO"],
-    "tbwf": ["CINZA CLARO"],
-    "egret": ["CINZA CLARO"],
-    "nuvem": ["CINZA CLARO"],
-    "vaporous gray": ["CINZA CLARO"],
-    "glacier": ["CINZA CLARO"],
-    "gelo": ["CINZA CLARO"],
-    "arctic": ["CINZA CLARO"],
-    "nimbus": ["CINZA CLARO"],
-    "cinza escuro": ["CINZA ESCURO"],
-    "cinza esc": ["CINZA ESCURO"],
-    "dark grey": ["CINZA ESCURO"],
-    "grigio escuro": ["CINZA ESCURO"],
-    "iron": ["CINZA ESCURO"],
-    "rock": ["CINZA"],
-    "cinza": ["CINZA"],
-    "talc": ["CINZA"],
-    "satelite": ["CINZA"],
-    "grey": ["CINZA"],
-    "gray": ["CINZA"],
-    "grethr": ["CINZA"],
-    "prata": ["PRATA"],
-    "silver": ["PRATA"],
-    "chumbo": ["CHUMBO"],
-    "grefiv": ["CHUMBO"],
-    "grafite": ["GRAFITE"],
-    "graphite": ["GRAFITE"],
-    "dark pewter": ["GRAFITE"],
-    "eclipse": ["GRAFITE"],
-    "forged iron": ["CHUMBO"],
-    "vermelho": ["VERMELHO"],
-    "actmar": ["VERMELHO"],
-    "racing red": ["VERMELHO"],
-    "athletic red": ["VERMELHO"],
-    "boltred": ["VERMELHO"],
-    "glored": ["VERMELHO"],
-    "red": ["VERMELHO"],
-    "verm.esc": ["VERMELHO ESCURO"],
-    "salmão": ["SALMÃO"],
-    "prairie": ["SALMÃO"],
-    "haze coral": ["SALMÃO"],
-    "mineral red": ["SALMÃO"],
-    "verde": ["VERDE"],
-    "fresh mint": ["VERDE"],
-    "dark green": ["VERDE ESCURO"],
-    "green": ["VERDE"],
-    "prlogr": ["VERDE"],
-    "june bag": ["VERDE ESCURO"],
-    "liquify avocado": ["VERDE ESCURO"],
-    "floresta": ["VERDE ESCURO"],
-    "fatigue": ["VERDE ESCURO"],
-    "dark moss": ["VERDE ESCURO"],
-    "oliva": ["VERDE OLIVA"],
-    "olive": ["VERDE OLIVA"],
-    "teal": ["VERDE AZULADO"],
-    "neon": ["VERDE NEON"],
-    "lime": ["VERDE NEON"],
-    "verde limão": ["VERDE NEON"],
-    "acid buzz": ["VERDE NEON"],
-    "halfgreen": ["VERDE NEON"],
-    "esmerald": ["VERDE ESMERALDA"],
-    "crystal blue": ["AZUL CLARO"],
-    "moonlight blue": ["AZUL CLARO"],
-    "heather": ["AZUL CLARO"],
-    "mistyc": ["AZUL CLARO"],
-    "misty": ["AZUL CLARO"],
-    "surf": ["AZUL CLARO"],
-    "prloin": ["AZUL ESCURO"],
-    "navy blue": ["AZUL MARINHO"],
-    "dark navy": ["AZUL MARINHO"],
-    "navy": ["AZUL MARINHO"],
-    "naval": ["AZUL MARINHO"],
-    "marinho": ["AZUL MARINHO"],
-    "turquesa": ["AZUL TURQUESA"],
-    "acqua": ["AZUL TURQUESA"],
-    "aquatic": ["AZUL TURQUESA"],
-    "royal": ["AZUL ROYAL"],
-    "indigo": ["AZUL INDIGO"],
-    "vtgi": ["AZUL INDIGO"],
-    "nindig": ["AZUL INDIGO"],
-    "tecind": ["AZUL INDIGO"],
-    "canvas stormy weather": ["AZUL INDIGO"],
-    "tiffany": ["AZUL TIFFANY"],
-    "cobalt": ["AZUL COBALTO"],
-    "azul": ["AZUL"],
-    "denim": ["AZUL"],
-    "sky": ["AZUL"],
-    "capri": ["AZUL"],
-    "lago drive": ["AZUL"],
-    "25 de agosto": ["AZUL"],
-    "salute": ["AZUL"],
-    "algiers blue": ["AZUL"],
-    "blue": ["AZUL"],
-    "selubl": ["AZUL"],
-    "dress blues": ["AZUL ESCURO"],
-    "midnight": ["AZUL ESCURO"],
-    "ciano": ["CIANO"],
-    "cyan": ["CIANO"],
-    "laranja": ["LARANJA"],
-    "harvest-pumpkin": ["LARANJA"],
-    "vm tel": ["LARANJA"],
-    "harvest": ["LARANJA"],
-    "orange": ["LARANJA"],
-    "rust": ["LARANJA"],
-    "borang": ["LARANJA"],
-    "amarelo": ["AMARELO"],
-    "goldenglow": ["AMARELO"],
-    "yellow": ["AMARELO"],
-    "yellowray": ["AMARELO"],
-    "narcissus": ["AMARELO"],
-    "angora": ["AMARELO CLARO"],
-    "roxo": ["ROXO"],
-    "purple": ["ROXO"],
-    "plum purple": ["ROXO"],
-    "dark purple": ["ROXO ESCURO"],
-    "lilás": ["LILÁS"],
-    "lilac": ["LILÁS"],
-    "aster": ["LILÁS"],
-    "lavander": ["LILÁS"],
-    "khaki": ["KHAKI"],
-    "new khaki": ["KHAKI"],
-    "caqui": ["KHAKI"],
-    "bege": ["BEGE"],
-    "beige": ["BEGE"],
-    "pebble": ["BEGE"],
-    "linen": ["BEGE"],
-    "dftw": ["BEGE"],
-    "canhamo": ["BEGE"],
-    "goldbeam": ["BEGE"],
-    "amêndoa": ["BEGE"],
-    "hay": ["BEGE"],
-    "summit gold": ["DOURADO"],
-    "gold": ["DOURADO"],
-    "areia": ["AREIA"],
-    "sand": ["AREIA"],
-    "dune": ["AREIA"],
-    "canvas cobblestone": ["ROSA CLARO"],
-    "wshp": ["ROSA CLARO"],
-    "rose": ["ROSA CLARO"],
-    "rosê": ["ROSA CLARO"],
-    "rosa claro": ["ROSA CLARO"],
-    "rosa": ["ROSA"],
-    "pink": ["ROSA"],
-    "blush": ["ROSA"],
-    "stone blush knit": ["ROSA"],
-    "chicle": ["ROSA"],
-    "chiclete": ["ROSA"],
-    "strawberry latte": ["ROSA"],
-    "berry": ["ROSA"],
-    "vinho": ["VINHO"],
-    "bordo": ["VINHO"],
-    "malbec": ["VINHO"],
-    "tinto": ["VINHO"],
-    "mulberry": ["VINHO"],
-    "cherry": ["VINHO"],
-    "caramelo": ["CARAMELO"],
-    "caramel": ["CARAMELO"],
-    "mel queimado": ["MARROM CLARO"],
-    "lbrown": ["MARROM CLARO"],
-    "camel": ["MARROM CLARO"],
-    "marrom": ["MARROM"],
-    "maroon": ["MARROM"],
-    "brown": ["MARROM"],
-    "butternut": ["MARROM"],
-    "cafe": ["MARROM"],
-    "deserto": ["MARROM"],
-    "whisky": ["MARROM"],
-    "colmeia": ["MARROM"],
-    "chipmunk": ["MARROM"],
-    "root beer": ["MARROM"],
-    "demitasse": ["MARROM"],
-    "cork": ["MARROM"],
-    "glazed ginger": ["MARROM"],
-    "pecan": ["MARROM"],
-    "earth strata": ["MARROM"],
-    "brostr": ["MARROM"],
-    "mostarda": ["MOSTARDA"],
-    "mustard": ["MOSTARDA"],
-    "dijon": ["MOSTARDA"],
-    "ocre": ["OCRE"],
-    "fawn": ["OCRE"],
-};
 
 const referenceColorsMap = {
     // ------------------------------- ADIDAS ----------------------------------
@@ -590,21 +296,6 @@ const ostoreColorsMap = {
     "800080": "ROXO",
 };
 
-function normalizeColorNames(string) {
-    const colorsSet = new Set();
-    const lowerCaseString = removeAccents(string.toLowerCase());
-
-    for (const color in colorsMap) {
-        const regex = new RegExp('\\b' + removeAccents(color) + '\\b', 'gi');
-        if (lowerCaseString.match(regex)) {
-            colorsMap[color].forEach(colorVariant => colorsSet.add(colorVariant));
-        }
-    }
-
-
-    return [...colorsSet];
-}
-
 function getColorsFromSneakerTitle(sneakerTitle) {
     const colors = [];
     const lowerCaseString = sneakerTitle.toLowerCase();
@@ -641,7 +332,7 @@ function processColorsString(colorsString) {
 }
 
 async function getColors(colorsObj) {
-    const { page, storeObj, brands, sneakerTitle, productReference } = colorsObj;
+    const { page, storeObj, sneakerTitle, productReference } = colorsObj;
 
     try {
         const colorsSet = new Set();
@@ -654,18 +345,6 @@ async function getColors(colorsObj) {
                     color = processColorsString(color);
                     color.forEach(colorVariant => colorsSet.add(colorVariant.toUpperCase()));
                 });
-            }
-        }
-
-        if (storeObj.name === "SunsetSkateshop") {
-            for (let i = 0; i < brands.length; i++) {
-                if (brands[i] === "ADIDAS" || brands[i] === "NEW BALANCE") {
-                    const colors = getColorsByProductReference(productReference);
-                    colors.forEach(color => colorsSet.add(color));
-                } else {
-                    const colors = normalizeColorNames(sneakerTitle);
-                    colors.forEach(color => colorsSet.add(color));
-                }
             }
         }
 
@@ -713,7 +392,7 @@ async function getColors(colorsObj) {
             }
         }
 
-        if (storeObj.name === "CDR") {
+        if (storeObj.name === "CDR" || storeObj.name === "SunsetSkateshop") {
             const titleColors = getColorsFromSneakerTitle(sneakerTitle);
             const referenceColors = getColorsByProductReference(productReference);
 
@@ -736,9 +415,7 @@ async function getColors(colorsObj) {
 }
 
 module.exports = {
-    colorsMap,
     colorsRegex,
-    normalizeColorNames,
     getColorsByProductReference,
     getColors
 }

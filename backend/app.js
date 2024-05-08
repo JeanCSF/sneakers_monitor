@@ -33,8 +33,8 @@ const runScrapingScripts = async () => {
     }
 };
 
-runScrapingScripts();
 if (process.env.ENVIRONMENT === "dev") {
+    runScrapingScripts();
 
     cron.schedule(timeGapInHours, async () => {
         try {

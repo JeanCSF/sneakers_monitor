@@ -197,7 +197,7 @@ function createContribute() {
     code.textContent = "00020126580014BR.GOV.BCB.PIX0136946069f0-d048-4606-ae49-3f363f1b40475204000053039865802BR5925Jean Carlos de Santana Fe6009SAO PAULO621405101ePw3KHoui6304FE0A";
 
     const contibute = document.createElement("div");
-    contibute.className = "col-lg-6 text-center text-lg-end mt-4 mt-lg-0 sticky-top";
+    contibute.className = "col-lg-4 text-center text-lg-end mt-4 mt-lg-0 sticky-top";
 
     const contributeTitle = document.createElement("p");
     contributeTitle.className = "fs-1";

@@ -1,4 +1,39 @@
 const { Sneaker: SneakerModel } = require("../models/Sneaker");
+const coresRegex = {
+    "azul": /azul|blue|astral glow|turquesa|turquoise|aqua|storm|alaska|hongo bros|shanahan importado|scuba|teal|jade|heather|mistyc|misty|surf|prloin|navy|naval|marinho|aquatic|royal|indigo|vtgi|nindig|tecind|stormy|tiffany|cobalt|denim|sky|capri|lago drive|agosto|salute|selubl|blues|midnight|acqua|bwt|xswb|abb|dn1|xskb|wlk/i,
+    "cinza": /cinza|grey|gray|frost|astral glow|hongo bros|shanahan importado|mork|sea salt|ice|quarry|magnet|cz|tbwf|egret|nuvem|glacier|gelo|nimbus|arctic|grigio|iron|rock|talc|satelite|grethr|chumbo|grefiv|grafite|graphite|dark pewter|eclipse|cobblestone|bwt|xswb|blg|xskb|nwd|xskr/i,
+    "branco": /branco|white|wht|allwhite|truewhite|rawwhite|clowhi|crywht|ftwwht|cwhite|reflection|frost|castanho|pb|sidestripeblack|astral glow|shanahan importado|bc\.neve|alloy|bco neve|sea salt|orquidea|birch|ice|capri|bwt|wlm|xkwr|hdv|xswb|wbk|wtk|hbw|blw|bbw|bwb|nwd|wlk/i,
+    "preto": /preto|black|reflection|frost|castanho|pb|sidestripeblack|alaska|verona slip prm|ltx|latex|blk|cblack|ght|pto carvao|blackout|scuba|nomade essencial|skate hockey|original 3|notorio|bwt|byo|kkg|xkwr|bcm|wbk|gb2|abb|wtk|blg|blw|bbw|bwb|xskb|xkcc|xskr/i,
+    "marrom": /marrom|mar|brown|workwear|mesa|canhamo|caramelo|caramel|mel queimado|lbrown|camel|maroon|butternut|cafe|deserto|whisky|colmeia|chipmunk|root beer|demitasse|cork|ginger|pecan|earth|brostr|xccn|dn1|xkcc/i,
+    "verde": /verde|green|storm|mint|prlogr|june bag|avocado|floresta|fatigue|dark moss|oliva|olive|teal|neon|lime|limão|limao|buzz|halfgreen|esmerald|olv|wlm|hdv/i,
+    "off-white": /off-white|off white|offwhite|crewht|owhite|bc bauni|bc baun|buttercream|chantilly|marshmallow|mrsm|creme|cream|ivory|perola|pearl|board|mork/i,
+    "bege": /bege|beige|workwear|storm|sea salt|birch|pebble|linen|dftw|canhamo|goldbeam|amêndoa|amendoa|hay/i,
+    "multicolorido": /multicolorido|multicolor|colorido|multi|colorblock|patchwork|mesclado|mesc|castanho/i,
+    "amarelo": /amarelo|yellow|hongo bros|capri|goldenglow|yellowray|narcissus|angora|byo|bcm|gb2/i,
+    "quadriculado": /quadriculado|quadriculada|chckrb|checkerbo|chckbrd|checkerboard|check/i,
+    "rosa": /rosa|pink|aster|wshp|rose|rosê|blush|chicle|chiclete|strawberry latte|berry/i,
+    "laranja": /laranja|orange|mesa|storm|scuba|pumpkin|vm tel|harvest|rust|borang|xccn/i,
+    "vermelho": /vermelho|red|actmar|glored|boltred|verm\.esc|capri|xkwr|wtk|xskr/i,
+    "khaki": /khaki|workwear|caqui|narcissus|canhamo|deserto|whisky|colmeia/i,
+    "salmao": /salmao|salmão|salmon|prairie|haze coral|mineral red/i,
+    "vinho": /vinho|wine|bordo|malbec|tinto|mulberry|cherry/i,
+    "refletivo": /refletivo|reflective|reflect|reflex/i,
+    "lilas": /lilas|lilac|lilás|board|lavander|aster/i,
+    "camuflado": /camuflado|camuflada|camo|camu|bcm/i,
+    "dourado": /dourado|gold|golden|goldenglow|gb2/i,
+    "animal print": /animal print|animal pack|mesa/i,
+    "glow in the dark": /glow in the dark|gitd/i,
+    "areia": /areia|sand|dune|deserto|whisky/i,
+    "prata": /prata|silver|board|mork|birch/i,
+    "roxo": /roxo|purple|astral glow|aster/i,
+    "mostarda": / mostarda|mustard|dijon/i,
+    "furta-cor": /furtacor|furta cor/i,
+    "gum": /gum|gum4|rubber|mesa|kkg/i,
+    "pantone": /pantone|panton/i,
+    "ocre": /ocre|ochre|fawn/i,
+    "ciano": /ciano|cyan/i,
+    "uv": /uv/i,
+};
 
 
 const sneakerController = {
@@ -19,7 +54,23 @@ const sneakerController = {
 
             if (req.query.color) {
                 const colors = typeof req.query.color === 'string' ? [req.query.color] : req.query.color;
-                query.colors = { $in: colors };
+                const colorQueries = colors.map(color => {
+                    const regex = new RegExp('\\b' + coresRegex[color].source + '\\b', 'gi');;
+                    if (regex) {
+                        return {
+                            $or: [
+                                { "cor": { $regex: regex } },
+                                { "sneakerTitle": { $regex: regex } }
+                            ]
+                        };
+                    } else {
+                        return null;
+                    }
+                }).filter(query => query !== null);
+
+                if (colorQueries.length > 0) {
+                    query.$or = colorQueries;
+                }
             }
 
             if (req.query.size) {
@@ -165,7 +216,23 @@ const sneakerController = {
 
             if (req.query.color) {
                 const colors = typeof req.query.color === 'string' ? [req.query.color] : req.query.color;
-                query.colors = { $in: colors };
+                const colorQueries = colors.map(color => {
+                    const regex = new RegExp('\\b' + coresRegex[color].source + '\\b', 'gi');;
+                    if (regex) {
+                        return {
+                            $or: [
+                                { "cor": { $regex: regex } },
+                                { "sneakerTitle": { $regex: regex } }
+                            ]
+                        };
+                    } else {
+                        return null;
+                    }
+                }).filter(query => query !== null);
+
+                if (colorQueries.length > 0) {
+                    query.$or = colorQueries;
+                }
             }
 
             if (req.query.size) {
@@ -248,7 +315,23 @@ const sneakerController = {
 
             if (req.query.color) {
                 const colors = typeof req.query.color === 'string' ? [req.query.color] : req.query.color;
-                query.colors = { $in: colors };
+                const colorQueries = colors.map(color => {
+                    const regex = new RegExp('\\b' + coresRegex[color].source + '\\b', 'gi');;
+                    if (regex) {
+                        return {
+                            $or: [
+                                { "cor": { $regex: regex } },
+                                { "sneakerTitle": { $regex: regex } }
+                            ]
+                        };
+                    } else {
+                        return null;
+                    }
+                }).filter(query => query !== null);
+
+                if (colorQueries.length > 0) {
+                    query.$or = colorQueries;
+                }
             }
 
             if (req.query.size) {
@@ -326,12 +409,28 @@ const sneakerController = {
             let query = {
                 categories: category
             };
-            
+
             let sort = {};
 
             if (req.query.color) {
                 const colors = typeof req.query.color === 'string' ? [req.query.color] : req.query.color;
-                query.colors = { $in: colors };
+                const colorQueries = colors.map(color => {
+                    const regex = new RegExp('\\b' + coresRegex[color].source + '\\b', 'gi');;
+                    if (regex) {
+                        return {
+                            $or: [
+                                { "cor": { $regex: regex } },
+                                { "sneakerTitle": { $regex: regex } }
+                            ]
+                        };
+                    } else {
+                        return null;
+                    }
+                }).filter(query => query !== null);
+
+                if (colorQueries.length > 0) {
+                    query.$or = colorQueries;
+                }
             }
 
             if (req.query.size) {
