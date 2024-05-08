@@ -401,7 +401,7 @@ async function processLink(processLinkObj) {
             const price = await getPrice({ page, storeObj });
             const discountPrice = await getDiscountPrice({ page, storeObj });
             const availableSizes = await getAvailableSizes({ page, storeObj });
-            const colors = await getColors({ page, storeObj, brands, sneakerTitle, productReference });
+            const colors = await getColors({ page, storeObj, sneakerTitle, productReference });
             const codeFromStore = await getCodeFromStore({ page, url, storeObj });
 
             const sneakerObj = {
