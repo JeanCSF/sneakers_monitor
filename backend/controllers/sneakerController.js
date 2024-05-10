@@ -1,4 +1,7 @@
 const { Sneaker: SneakerModel } = require("../models/Sneaker");
+const { removeAccents, removeDots } = require('../src/utils/stringManipulation');
+const { clearSneakerName } = require('../src/utils/titleFunctions');
+
 const coresRegex = {
     "azul": /azul|blue|astral glow|turquesa|turquoise|aqua|storm|alaska|hongo bros|shanahan importado|scuba|teal|jade|heather|mistyc|misty|surf|prloin|navy|naval|marinho|aquatic|royal|indigo|vtgi|nindig|tecind|stormy|tiffany|cobalt|denim|sky|capri|lago drive|agosto|salute|selubl|blues|midnight|acqua|bwt|xswb|abb|dn1|xskb|wlk/i,
     "cinza": /cinza|grey|gray|frost|astral glow|hongo bros|shanahan importado|mork|sea salt|ice|quarry|magnet|cz|tbwf|egret|nuvem|glacier|gelo|nimbus|arctic|grigio|iron|rock|talc|satelite|grethr|chumbo|grefiv|grafite|graphite|dark pewter|eclipse|cobblestone|bwt|xswb|blg|xskb|nwd|xskr/i,
@@ -28,7 +31,7 @@ const coresRegex = {
     "roxo": /roxo|purple|astral glow|aster/i,
     "mostarda": / mostarda|mustard|dijon/i,
     "furta-cor": /furtacor|furta cor/i,
-    "gum": /gum|gum4|rubber|mesa|kkg/i,
+    "gum": /gum|gum4|rubber|mesa|kkg|gun/i,
     "pantone": /pantone|panton/i,
     "ocre": /ocre|ochre|fawn/i,
     "ciano": /ciano|cyan/i,
@@ -48,7 +51,7 @@ const sneakerController = {
             let sort = {};
 
             if (req.query.search) {
-                const regex = new RegExp(req.query.search, 'i');
+                const regex = new RegExp('\\b' + req.query.search + '\\b', 'gi');
                 query.sneakerTitle = regex;
             }
 
@@ -57,12 +60,7 @@ const sneakerController = {
                 const colorQueries = colors.map(color => {
                     const regex = new RegExp('\\b' + coresRegex[color].source + '\\b', 'gi');;
                     if (regex) {
-                        return {
-                            $or: [
-                                { "cor": { $regex: regex } },
-                                { "sneakerTitle": { $regex: regex } }
-                            ]
-                        };
+                        return { "colors": { $regex: regex } };
                     } else {
                         return null;
                     }
@@ -125,11 +123,22 @@ const sneakerController = {
             }
 
             const sneakers = await SneakerModel.find(query).sort(sort).limit(limit).skip(startIndex);
+
+            const uniqueSneakers = [];
+            const seenIds = new Set();
+
+            sneakers.forEach(sneaker => {
+                if (!seenIds.has(sneaker._id)) {
+                    uniqueSneakers.push(sneaker);
+                    seenIds.add(sneaker._id);
+                }
+            });
+
             const totalCount = await SneakerModel.countDocuments(query);
             const hasMore = endIndex < totalCount;
 
             res.json({
-                sneakers,
+                sneakers: uniqueSneakers,
                 currentPage: page,
                 totalPages: Math.ceil(totalCount / limit),
                 hasNextPage: hasMore,
@@ -195,6 +204,38 @@ const sneakerController = {
                 return;
             }
             res.json(sneaker);
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({ msg: "Internal server error" });
+        }
+    },
+
+    getSimilar: async (req, res) => {
+        try {
+            const id = req.params.id;
+            const sneaker = await SneakerModel.findOne({ _id: id });
+            if (!sneaker) {
+                res.status(404).json({ msg: "Sneaker não encontrado" });
+                return;
+            }
+
+            let title = sneaker.sneakerTitle;
+            title = await clearSneakerName({
+                sneakerName: title,
+                brands: sneaker.brands,
+                categories: sneaker.categories,
+                productReference: sneaker.productReference,
+                colors: sneaker.colors
+            });
+            title = removeDots(title);
+            title = removeAccents(title);
+            title = title.replace(/[^\w\s]/gi, '')
+            title = title.split(' ')
+            console.log(title);
+
+            const regex = new RegExp('\\b' + title + '\\b', 'gi');
+            const similarSneakers = await SneakerModel.find({ _id: { $ne: sneaker._id }, sneakerTitle: { $regex: regex }, brands: { $in: sneaker.brands } });
+            res.json(similarSneakers);
         } catch (error) {
             console.log(error);
             res.status(500).json({ msg: "Internal server error" });

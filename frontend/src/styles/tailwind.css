@@ -1,9 +1,86 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-*{
+
+* {
     font-family: 'Roboto', sans-serif;
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+.uv-gradient {
+    background-image: linear-gradient(220deg,
+            hsl(318deg 100% 20%) 0%,
+            hsl(285deg 100% 26%) 20%,
+            hsl(251deg 100% 32%) 40%,
+            hsl(218deg 100% 38%) 60%,
+            hsl(184deg 100% 44%) 80%,
+            hsl(151deg 100% 50%) 100%);
+}
+
+.refletivo-gradient {
+    background-image: linear-gradient(145deg,
+            hsl(0deg 0% 24%) 0%,
+            hsl(344deg 0% 52%) 29%,
+            hsl(344deg 0% 83%) 43%,
+            hsl(344deg 0% 78%) 57%,
+            hsl(344deg 0% 37%) 71%,
+            hsl(0deg 0% 0%) 100%);
+}
+
+.pantone {
+    background-image: url('data:image/png;base64,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');
+    background-size: cover;
+}
+
+.camuflado {
+    background-image: url("https://img.freepik.com/vetores-premium/padrao-de-camuflagem-vetorial-para-design-de-roupas-padrao-militar-de-camuflagem-na-moda_472917-122.jpg");
+    background-size: cover;
+}
+
+.animalprint {
+    background-image: url("https://lirents.net/wp-content/uploads/Zebra-6.jpg");
+    background-size: 80px, cover;
+}
+
+.gum-gradient {
+    background: linear-gradient(to bottom, #DBDADA, #EAEAEA, #45423f, #4B3621);
+}
+
+.furtacor-gradient {
+    background-image: linear-gradient(160deg,
+            hsl(11deg 100% 85%) 0%,
+            hsl(280deg 62% 35%) 33%,
+            hsl(191deg 68% 34%) 67%,
+            hsl(104deg 100% 79%) 100%);
+
+}
+
+.quadriculado-gradient {
+    background-image: url("https://img.elo7.com.br/product/zoom/180C2DF/papel-de-parede-xadrez-quadriculado-pret-papel-de-parede-xadrez-azul.jpg");
+    background-size: 13px, cover;
+
+}
+
+.multicolorido-gradient {
+    background-image: linear-gradient(145deg,
+            hsl(0deg 100% 45%) 0%,
+            hsl(54deg 100% 35%) 24%,
+            hsl(149deg 100% 41%) 35%,
+            hsl(207deg 100% 50%) 45%,
+            hsl(247deg 79% 58%) 55%,
+            hsl(276deg 79% 49%) 65%,
+            hsl(336deg 100% 50%) 76%,
+            hsl(51deg 95% 46%) 100%);
+}
+
+.gitd-gradient {
+    background-image: linear-gradient(180deg,
+            hsl(0deg 0% 0%) 1%,
+            hsl(105deg 60% 23%) 49%,
+            hsl(105deg 81% 43%) 51%,
+            hsl(113deg 76% 46%) 49%,
+            hsl(127deg 73% 25%) 51%,
+            hsl(118deg 63% 7%) 99%);
 }

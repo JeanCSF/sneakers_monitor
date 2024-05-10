@@ -1,3 +1,4 @@
+const DEV = import.meta.env.DEV;
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { FaBarsStaggered } from "react-icons/fa6";
@@ -6,6 +7,7 @@ import { HiOutlineXMark } from "react-icons/hi2";
 const logo = "/favicon.ico"
 import { Dropdown, DropdownItem } from "../Dropdown";
 import { Search } from "../Search";
+
 
 export const Navbar: React.FC = () => {
 
@@ -25,7 +27,7 @@ export const Navbar: React.FC = () => {
     const [dropdownType, setDropdownType] = useState<string>("");
 
     const fetchItems = async (route: string, setData: (data: DropdownItem[]) => void) => {
-        const response = await axios.get(`http://localhost:3000/sneakers/${route}`);
+        const response = await axios.get(`${DEV ? "http://localhost:3001/sneakers" : "https://api.snkrmagnet.com.br/sneakers"}/${route}`);
         setData(response.data);
     };
 
@@ -78,6 +80,7 @@ export const Navbar: React.FC = () => {
                         <li className="my-7 md:my-0 md:ml-1" key={link.name}>
                             <a
                                 href={link.link}
+                                target={link.name === "API" ? "_blank" : "_self"}
                                 title={link.name}
                                 className="font-bold p-4 dark:text-white"
                                 onMouseEnter={() => {
@@ -89,6 +92,7 @@ export const Navbar: React.FC = () => {
                                         }
                                     }
                                 }}
+                                onMouseLeave={() => setOpen(false)}
                             >
                                 {link.name}
                             </a>
@@ -98,7 +102,8 @@ export const Navbar: React.FC = () => {
                         type="button"
                         className="flex items-center font-bold btn  dark:text-white md:ml-1 rounded md:static p-1 ml-2"
                         title="Buscar"
-                        onMouseEnter={() => setIsSearchOpen(true)}>
+                        onMouseEnter={() => setIsSearchOpen(true)}
+                        onMouseLeave={() => setOpen(false)}>
                         BUSCAR
                     </button>
                 </ul>

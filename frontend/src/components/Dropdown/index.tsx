@@ -1,5 +1,6 @@
 import { HiOutlineXMark } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
+import { usePagination } from "../../utils/Hooks";
 
 export type DropdownItem = {
     id: number;
@@ -11,15 +12,18 @@ type DropdownProps = {
     isDropdownOpen: boolean;
     setIsDropdownOpen: (isDropdownOpen: boolean) => void;
     dropdownRoute: string;
-
 }
 
 export const Dropdown: React.FC<DropdownProps> = ({ items, isDropdownOpen, setIsDropdownOpen, dropdownRoute }) => {
+    const { setCurrentPage } = usePagination();
     const navigate = useNavigate();
+    
     const handleBtnClick = (item: string) => {
         navigate(`/${dropdownRoute}/${item.toLowerCase()}`);
+        setCurrentPage(1);
         setIsDropdownOpen(false);
     }
+
     return (
         <div className="relative">
             <div

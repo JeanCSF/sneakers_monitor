@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePagination } from "../../utils/Hooks";
 
 import { FaSearch } from "react-icons/fa";
 import { HiOutlineXMark } from "react-icons/hi2";
@@ -10,6 +11,7 @@ type SearchProps = {
 }
 
 export const Search: React.FC<SearchProps> = ({ isSearchOpen, setIsSearchOpen }) => {
+    const { setCurrentPage } = usePagination();
     const [search, setSearch] = useState("");
 
     const navigate = useNavigate();
@@ -18,6 +20,7 @@ export const Search: React.FC<SearchProps> = ({ isSearchOpen, setIsSearchOpen })
 
         if (!search) return;
 
+        setCurrentPage(1);
         navigate(`/buscar/${search}`);
         setIsSearchOpen(false);
         setSearch("");
