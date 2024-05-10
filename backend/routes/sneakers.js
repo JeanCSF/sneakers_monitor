@@ -15,6 +15,9 @@ router.route("/sneakers")
 router.route("/sneaker/:id")
     .get((req, res) => sneakerController.get(req, res));
 
+router.route("/sneaker/similar/:id")
+    .get((req, res) => sneakerController.getSimilar(req, res));
+
 router.route("/sneakers/categories")
     .get((req, res) => sneakerController.getAllCategories(req, res));
 

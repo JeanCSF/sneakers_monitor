@@ -10,16 +10,7 @@ window.onload = function () {
         ],
         layout: "StandaloneLayout",
     });
-
-    const main = document.getElementById("swagger-ui");
-    const container = document.createElement("main");
-    container.className = "d-flex flex-column flex-lg-row justify-content-between p-3";
-    container.appendChild(main.cloneNode(true));
-    main.parentNode.replaceChild(container, main);
-
-    const contribute = createContribute();
-    container.appendChild(contribute);
-
+    
     createFooter();
 }
 

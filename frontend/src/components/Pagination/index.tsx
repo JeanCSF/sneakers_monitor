@@ -22,17 +22,16 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     };
 
     const updateURL = (page: number) => {
-        setSearchParams((params) => ({
-            ...params,
-            orderBy: searchParams.get('orderBy') || 'price-asc',
-            page: page.toString()
-        }));
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.set('page', page.toString());
+        setSearchParams(newSearchParams);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handlePageChange = (page: number) => {
         const currentPage = parseInt(searchParams.get('page') || '1', 10);
         if (page !== currentPage) {
+            onPageChange(page);
             updateURL(page);
         }
     };

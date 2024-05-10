@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PaginationProvider } from "./utils/PaginationContext";
 import { AppRoutes } from "./utils/AppRoutes";
 import { ToggleButton } from "./components/ToggleButton";
 
@@ -20,14 +21,16 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col justify-between gap-1">
-      <div
-        onClick={toggleTheme}
-        className="fixed right-1 top-14 cursor-pointer flex items-center z-50">
-        <CiSun className="w-5 h-5 dark:text-white" /><ToggleButton isDarkMode={isDarkMode} /><CiCloudSun className="w-5 h-5 dark:text-white" />
+    <PaginationProvider>
+      <div className="flex flex-col justify-between gap-1">
+        <div
+          onClick={toggleTheme}
+          className="fixed right-1 top-14 cursor-pointer flex items-center z-50">
+          <CiSun className="w-5 h-5 dark:text-white" /><ToggleButton isDarkMode={isDarkMode} /><CiCloudSun className="w-5 h-5 dark:text-white" />
+        </div>
+        <AppRoutes />
       </div>
-      <AppRoutes />
-    </div>
+    </PaginationProvider>
   )
 }
 

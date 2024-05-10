@@ -20,3 +20,12 @@ export type Sneakers = {
     createdAt: string;
     updatedAt: string;
 }
+
+export type apiResponse = {
+    sneakers: Sneakers[];
+    currentPage: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    totalCount: number;
+}
+

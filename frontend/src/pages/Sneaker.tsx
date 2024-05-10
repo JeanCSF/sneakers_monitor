@@ -1,29 +1,129 @@
-import axios from "axios";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Sneakers } from "../utils/types";
+import { apiClient } from "../utils/api";
+import { Card } from "../components/Card";
+
 export const Sneaker: React.FC = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
+
 
     const [sneaker, setSneaker] = useState<Sneakers | null>(null);
+    const [similarSneakers, setSimilarSneakers] = useState<Sneakers[]>([]);
 
     useEffect(() => {
-        axios.get(`http://localhost:3000/sneaker/${id}`)
-            .then(response => {
-                setSneaker(response.data);
-            })
-            .catch(error => {
-                console.error(error);
-            });
+        apiClient.get<Sneakers>(`/sneaker/${id}`).then((res) => {
+            setSneaker(res.data);
+        });
     }, [id]);
+
+    const clearSneakerTitle = (sneaker: Sneakers) => {
+        let title = sneaker.sneakerTitle.replace(/"/g, "");
+
+        sneaker.colors.forEach((color) => {
+            title = title.replace(color, '');
+        });
+
+        sneaker.brands.forEach((brand) => {
+            title = title.replace(brand, '');
+        });
+
+        sneaker.categories.forEach((category) => {
+            title = title.replace(category, '');
+        });
+
+        title = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const words = title.split(" ");
+        const firstTwoWords = words.slice(0, 3);
+        return firstTwoWords.join(" ");
+    }
+
+    const clearedSneakerTitle = sneaker && clearSneakerTitle(sneaker!);
+    let url = `/sneakers?search=${clearedSneakerTitle}&`;
+    sneaker?.brands.forEach((brand) => {
+        url += `brand=${brand}&`;
+    });
+    sneaker?.categories.forEach((category) => {
+        url += `category=${category}&`;
+    });
+
+    useEffect(() => {
+        if (clearedSneakerTitle) {
+            apiClient.get(`${url}limit=16`).then((res) => {
+                const filteredSimilarSneakers = res.data.sneakers.filter((similarSneaker: Sneakers) => similarSneaker._id !== id);
+                setSimilarSneakers(filteredSimilarSneakers);
+            });
+        }
+    }, [clearedSneakerTitle, id, url]);
+
+
     return (
-        <div>
+        <div className="flex flex-col">
             {sneaker && (
-                <div>
-                    <h1>{sneaker.sneakerTitle}</h1>
-                    <img src={sneaker.img} alt={sneaker.sneakerTitle} />
+                <div className="w-full p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <img
+                            src={sneaker.img}
+                            alt={sneaker.sneakerTitle}
+                            className="w-96 h-auto rounded-lg shadow-md mb-8 md:mb-0 mx-auto md:mx-0" />
+                        <div className="flex flex-col justify-between">
+                            {clearedSneakerTitle}
+                            <h1 className="text-lg md:text-xl font-bold">{sneaker.sneakerTitle}</h1>
+                            <p className="text-lg font-bold">Código: {sneaker.productReference && sneaker.productReference}</p>
+                            <div className="flex flex-wrap items-center">
+                                {sneaker.brands.map((brand, index) => (
+                                    <span
+                                        key={index}
+                                        className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-sm mr-2 mb-2 cursor-pointer"
+                                        title={brand}
+                                        onClick={() => {
+                                            navigate(`/marca/${brand.toLowerCase()}`);
+                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                        }}
+                                    >
+                                        {brand}
+                                    </span>
+                                ))}
+                            </div>
+                            <span
+                                className="overflow-hidden whitespace-nowrap overflow-ellipsis max-w-[300px] cursor-pointer mt-4 text-lg md:text-xl"
+                                onClick={() => {
+                                    navigate(`/loja/${sneaker.store.toLowerCase()}`);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                            >
+                                Loja: {sneaker.store}
+                            </span>
+                            <p className="text-lg md:text-xl font-bold">Preço: {sneaker.currentPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            {sneaker.discountPrice && sneaker.discountPrice !== sneaker.currentPrice && (
+                                <p className="text-lg md:text-xl font-bold mb-4 text-green-500">C/ Desconto: {sneaker.discountPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            )}
+
+                            <p className="text-lg md:text-xl font-bold my-4 md:mt-8">Tamanhos disponíveis:</p>
+                            <div className="flex overflow-x-auto">
+                                {sneaker.availableSizes.map((size, index) => (
+                                    <span key={index} className="inline-block bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-md text-sm mr-2 mb-2 h-7 md:h-10 md:text-2xl">{size}</span>
+                                ))}
+                            </div>
+                            <a href={sneaker.srcLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Ver no site"
+                                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-8 text-center text-3xl">
+                                VER NA LOJA
+                            </a>
+                        </div>
+                    </div>
+                    <h2 className="text-2xl md:text-3xl font-bold my-8">Sneakers Similares</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
+                        {similarSneakers.map(similarSneaker => (
+                            <Card key={similarSneaker._id} sneaker={similarSneaker} />
+                        ))}
+                    </div>
                 </div>
             )}
         </div>
     );
+
 }
