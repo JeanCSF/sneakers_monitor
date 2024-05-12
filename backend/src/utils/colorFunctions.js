@@ -144,6 +144,8 @@ const referenceColorsMap = {
     "ID7440": ["BRANCO", "AZUL ROYAL"],
     "HQ4650": ["VERDE"],
     "HP6489": ["BEGE", "GUM"],
+    "ID6266": ["BRANCO", "LILÁS", "ROXO"],
+    "IG1600": ["VERDE", "BRANCO", "AMARELO"],
 
     // ------------------------------- NEW BALANCE ----------------------------------
     "U574LGGB": ["PRETO"],
@@ -223,6 +225,7 @@ const referenceColorsMap = {
     // ------------------------------- ASICS --------------------------------------------
     "1203A416\.100": ["CREME", "PRETO", "MARROM"],
     "1201A482\.102": ["BEGE", "VERMELHO"],
+    "1203A345-021": ["CINZA"],
 
     // ------------------------------- CONVERSE -----------------------------------------
     "CT09550001": ["AMARELO OURO"],
@@ -273,11 +276,19 @@ const referenceColorsMap = {
     "01001492": ["BRANCO"],
     "0991802": ["PRATA", "VERDE LIMÃO", "CORAL"],
     "1172699": ["BEGE", "BRANCO"],
+    "F01L00254-6235": ["BRANCO", "VERDE"],
 
 
     // ---------------------------------- PUMA ------------------------------------------
     "384958-06": ["BRANCO", "PRETO", "AZUL TURQUESA", "VERDE LIMÃO", "ROSA"],
-    "384958-04": ["BRANCO", "CORAL", "CINZA"]
+    "384958-04": ["BRANCO", "CORAL", "CINZA"],
+
+    // ---------------------------------- RIDER -----------------------------------------
+    "12273-AZ510": ["VERDE"],
+    "12353-AY642": ["PRETO"],
+
+    // --------------------------------- REEBOK -----------------------------------------
+    "100033879-MHURC": ["BRANCO", "PRETO", "VERDE"],
 };
 
 const ostoreColorsMap = {
@@ -407,10 +418,45 @@ async function getColors(colorsObj) {
             });
         }
 
+        if (storeObj.name === "Artwalk") {
+            const colorsElement = await page.$eval(storeObj.selectors.colors, (el) => el?.innerText.trim());
+            if (colorsElement) {
+                colorsSet.add(colorsElement.toUpperCase());
+            }
+            const titleColors = getColorsFromSneakerTitle(sneakerTitle);
+            titleColors.forEach(color => {
+                color = processColorsString(color);
+                color.forEach(colorVariant => colorsSet.add(colorVariant.toUpperCase()));
+            });
+        }
+
+        if (storeObj.name === "GDLP") {
+            const colorsElement = await page.$eval(storeObj.selectors.colors, (el) => el?.innerText.split("\n")[0].match(/:(.*)/)[1].toUpperCase().trim());
+            if (colorsElement !== "") {
+                const colorsArray = colorsElement.split("/");
+                colorsArray.forEach((color) => {
+                    colorsSet.add(color
+                        .toLowerCase()
+                        .replace('pedro', 'preto')
+                        .replace('aa', 'branco, amarelo')
+                        .toUpperCase())
+                });
+            } else {
+                const referenceColors = getColorsByProductReference(productReference);
+
+                referenceColors.forEach(color => {
+                    color = processColorsString(color);
+                    color.forEach(colorVariant => colorsSet.add(colorVariant.toUpperCase()));
+                });
+            }
+        }
+
         const colorsArray = Array.from(colorsSet);
         return [...colorsArray];
     } catch (error) {
         console.error("Error getting colors:", error);
+        console.log("Sneaker title:", sneakerTitle);
+        console.log("User Agent:", await page.evaluate(() => navigator.userAgent));
     }
 }
 

@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Sneakers } from "../../utils/types";
 
 interface CardProps {
@@ -6,31 +6,32 @@ interface CardProps {
 }
 
 export const Card: React.FC<CardProps> = ({ sneaker }) => {
-    const navigate = useNavigate();
     return (
         <div className="w-full p-4">
             <div className="bg-white dark:bg-gray-800 rounded-md shadow-md">
-                <img
-                    src={sneaker.img}
-                    alt={sneaker.sneakerTitle}
-                    className="w-full h-72 object-cover rounded-t-md cursor-pointer"
-                    onClick={() => {
-                        navigate(`/sneaker/${sneaker._id}`);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                />
+                <Link to={`/sneaker/${sneaker._id}`}>
+                    <img
+                        src={sneaker.img}
+                        alt={sneaker.sneakerTitle}
+                        className="w-full h-72 object-cover rounded-t-md cursor-pointer"
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    />
+                </Link>
                 <div className="p-4">
-                    <h2 className="text-lg font-semibold mb-2 dark:text-white h-12 overflow-hidden cursor-pointer" onClick={() => navigate(`/sneaker/${sneaker._id}`)}>{sneaker.sneakerTitle}</h2>
+                    <Link to={`/sneaker/${sneaker._id}`}
+                        className="text-lg font-semibold mb-2 dark:text-white h-12 overflow-hidden cursor-pointer"
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    >
+                        {sneaker.sneakerTitle}
+                    </Link>
                     <p className="text-gray-600 dark:text-gray-400 mb-2 flex justify-between items-center">
-                        <span
+                        <Link to={`/loja/${sneaker.store.toLowerCase()}`}
                             className="overflow-hidden whitespace-nowrap overflow-ellipsis max-w-[100px] cursor-pointer"
-                            onClick={() => {
-                                navigate(`/loja/${sneaker.store.toLowerCase()}`);
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
+                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+
                         >
                             {sneaker.store}
-                        </span>
+                        </Link>
 
                         <a
                             href={sneaker.srcLink}
@@ -46,17 +47,15 @@ export const Card: React.FC<CardProps> = ({ sneaker }) => {
                     <p className="text-green-500 mb-4">{sneaker.discountPrice && sneaker.discountPrice !== sneaker.currentPrice && `C/ Desconto: ${sneaker.discountPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}</p>
                     <div className="flex flex-wrap items-center">
                         {sneaker.brands.map((brand, index) => (
-                            <span
+                            <Link to={`/marca/${brand.toLowerCase()}`}
                                 key={index}
                                 className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-sm mr-2 mb-2 cursor-pointer"
                                 title={brand}
-                                onClick={() => {
-                                    navigate(`/marca/${brand.toLowerCase()}`);
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
+                                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+
                             >
                                 {brand}
-                            </span>
+                            </Link>
                         ))}
                     </div>
                     <div className="flex overflow-x-auto mt-4">

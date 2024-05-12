@@ -32,7 +32,8 @@ async function interceptRequests(page, storeName) {
             request.resourceType() === 'media' ||
             (request.resourceType() === 'stylesheet' &&
                 storeName !== 'WallsGeneralStore' &&
-                storeName !== 'RatusSkateshop')) {
+                storeName !== 'RatusSkateshop' &&
+                storeName !== 'Artwalk')) {
             request.abort();
         } else {
             request.continue();
@@ -302,6 +303,12 @@ async function getLinks(getLinksObj) {
 
     while (retries < maxRetries) {
         try {
+            storeObj.name === "GDLP" && await page.waitForTimeout(3000);
+            if (storeObj.name === "Artwalk") {
+                await page.waitForSelector('button.vtex-modal-layout-0-x-closeButton', { timeout: 3000 }).catch(e => { });
+                await page.keyboard.press('Escape');
+                await page.evaluate(() => window.scrollBy(0, 500));
+            }
 
             if (storeObj.name === "SunsetSkateshop") {
                 const links = await getSunsetLinks(url)
@@ -318,8 +325,17 @@ async function getLinks(getLinksObj) {
             if (currentPage > 1) {
                 await page.setUserAgent(await generateRandomUserAgent());
                 await page.goto(url, { waitUntil: "domcontentloaded" });
-                storeObj.name === "Ostore" ? await page.waitForTimeout(2000) : null;
+
+                storeObj.name === "GDLP" || storeObj.name === "Ostore" && await page.waitForTimeout(3000);
+
+                if (storeObj.name === "Artwalk") {
+                    await page.waitForSelector('button.vtex-modal-layout-0-x-closeButton', { timeout: 3000 }).catch(e => { });
+                    await page.keyboard.press('Escape');
+                    await page.waitForTimeout(3000);
+                    await page.evaluate(() => window.scrollBy(0, 500));
+                }
             }
+
 
             userAgent = await page.evaluate(() => navigator.userAgent);
             const blocked =
@@ -361,6 +377,7 @@ async function getLinks(getLinksObj) {
                 return [];
             }
         } catch (error) {
+            storeObj.name === "GDLP" && await page.waitForTimeout(3000);
             retries++;
             console.log(`
             \nError getting links from: ${url}
@@ -382,7 +399,9 @@ async function processLink(processLinkObj) {
             await page.setUserAgent(await generateRandomUserAgent());
             await page.goto(url, { waitUntil: storeObj.name !== "Sunika" ? "load" : "domcontentloaded" });
 
+            storeObj.name === "GDLP" && await page.waitForTimeout(3000);
             userAgent = await page.evaluate(() => navigator.userAgent);
+            
             const blocked =
                 await page.waitForSelector('#cf-wrapper', { timeout: 3000 }).catch(e => { }) ||
                 await page.waitForSelector('h4.please', { timeout: 3000 }).catch(e => { }) ||
@@ -394,7 +413,7 @@ async function processLink(processLinkObj) {
             const srcLink = url
             const store = storeObj.name.toUpperCase();
             const sneakerTitle = await getSneakerTitle({ page, storeObj });
-            const brands = await getBrands(sneakerTitle);
+            const brands = await getBrands({ sneakerTitle });
             const categories = await getCategories({ page, sneakerTitle, storeObj, brands });
             const productReference = await getProductReference({ page, storeObj, brands, sneakerTitle });
             const img = await getImg({ page, storeObj, productReference, sneakerLink: srcLink });
@@ -427,14 +446,14 @@ async function processLink(processLinkObj) {
                 !sneakerTitle.toLowerCase().includes('bolsa')) {
                 await updateOrCreateSneaker(sneakerObj);
 
-                storeObj.name === "CDR" ? await page.waitForTimeout(5000) : null;
+                storeObj.name === "CDR" && await page.waitForTimeout(5000);
                 return;
             } else {
                 console.log(`Not a sneaker or not available sizes: ${sneakerTitle} / ${availableSizes}`);
                 return;
             }
         } catch (error) {
-            storeObj.name === "CDR" ? await page.waitForTimeout(5000) : null;
+            storeObj.name === "GDLP" && await page.waitForTimeout(3000);
             retries++;
             console.log(`
             \nError processing link: ${url}

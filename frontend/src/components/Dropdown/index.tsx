@@ -1,5 +1,5 @@
 import { HiOutlineXMark } from "react-icons/hi2";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { usePagination } from "../../utils/Hooks";
 
 export type DropdownItem = {
@@ -16,12 +16,11 @@ type DropdownProps = {
 
 export const Dropdown: React.FC<DropdownProps> = ({ items, isDropdownOpen, setIsDropdownOpen, dropdownRoute }) => {
     const { setCurrentPage } = usePagination();
-    const navigate = useNavigate();
-    
-    const handleBtnClick = (item: string) => {
-        navigate(`/${dropdownRoute}/${item.toLowerCase()}`);
+
+    const handleBtnClick = () => {
         setCurrentPage(1);
         setIsDropdownOpen(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
     return (
@@ -37,13 +36,13 @@ export const Dropdown: React.FC<DropdownProps> = ({ items, isDropdownOpen, setIs
                             </div>
                             <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 md:gap-0">
                                 {items.map(item => (
-                                    <button
+                                    <Link to={`/${dropdownRoute}/${item.name.toLowerCase()}`}
                                         key={item.id}
                                         className="block w-full px-4 py-2 text-left dark:hover:bg-gray-500 hover:bg-gray-300 font-semibold cursor-pointer"
-                                        onClick={() => handleBtnClick(item.name)}
+                                        onClick={() => handleBtnClick()}
                                     >
                                         {item.name}
-                                    </button>
+                                    </Link>
                                 ))}
                             </div>
                         </div>

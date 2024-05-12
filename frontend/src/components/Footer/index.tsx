@@ -1,6 +1,6 @@
 export const Footer: React.FC = () => {
     return (
-        <footer className="bg-gray-100 dark:bg-gray-800 py-4 px-1 text-gray-600 dark:text-gray-400 bottom-0 z-50">
+        <footer className="bg-gray-100 dark:bg-gray-800 py-4 px-1 text-gray-600 dark:text-gray-400 bottom-0">
             <div className="text-center">
                 <a href="#top" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                     Voltar ao Topo

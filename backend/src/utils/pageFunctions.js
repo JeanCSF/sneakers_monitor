@@ -14,11 +14,11 @@ function createSearchUrl(url, term) {
     }
 
     if (url.includes("gdlp")) {
-        return [`${url}calcados/${term.replace(/\s+/g, "-").toLowerCase()}`];
+        return [`${url}${term.replace(/\s+/g, "-").toLowerCase()}`];
     }
 
     if (url.includes("artwalk")) {
-        return [`${url}${term === "adidas" ? 'adidas-originals' : term.replace(/\s+/g, "-").toLowerCase()}/Tênis?O=OrderByPriceASC&PS=48`];
+        return [`${url}${term}`];
     }
 
     if (url.includes("lojavirus")) {
@@ -165,6 +165,16 @@ async function getNumOfPages(numOfPagesObj) {
                 }
                 return 1;
 
+            case "Artwalk":
+                const totalArtwalk = await page.$eval(storeSelectors.pagination, (el) => {
+                    const products = el?.innerText.match(/\d+/g);
+                    if (products) {
+                        return parseInt(products[0]);
+                    }
+                    return null;
+                })
+                return totalArtwalk ? Math.ceil(totalArtwalk / 12) : null;
+
             default:
                 return null;
         }
@@ -179,6 +189,7 @@ async function getCurrentPage(currentPageObj) {
     try {
         switch (storeName) {
             case "CDR":
+            case "Artwalk":
                 const cdrMatch = url.match(/=(\d+)/);
                 return cdrMatch ? parseInt(cdrMatch[1]) : 1;
 
@@ -187,8 +198,9 @@ async function getCurrentPage(currentPageObj) {
                 return parseInt(queryParams.get("pagina")) || 1;
 
             case "GDLP":
-                const path = url.pathname.split("/");
-                return parseInt(path[path.length - 1]) || 1;
+                const lastNumberMatch = url.match(/\/(\d+)(\/?)$/);
+                const lastNumberString = lastNumberMatch ? lastNumberMatch[1] : null;
+                return lastNumberString ? parseInt(lastNumberString) : 1;
 
             case "Ostore":
                 const match = url.match(/#(\d+)/);

@@ -1,4 +1,4 @@
-const categoryRegex = /(dunk|one star|all star|blazer|zoom|chinelo|adilette|slide|papete|chuteira|tênis|ténis|tenis|slip on|slip-on|bota|boot|sst|feminino|masculino|infantil|unissex|gore-tex|gtx|waterproof|cordura|bola|sean wotherspoon|sean wotherpoon|ronnie fieg|salehe bembury|salehe-bembury|bob esponja|moca|moma|pharrell williams)/ig;
+const categoryRegex = /(dunk|one star|all star|blazer|zoom|chinelo|adilette|slide|papete|sandália|mule|chuteira|tênis|ténis|tenis|plexus|slip on|slip-on|bota|boot|sst|feminino|masculino|infantil|unissex|gore-tex|gtx|waterproof|cordura|bola|sean wotherspoon|sean wotherpoon|ronnie fieg|salehe bembury|salehe-bembury|bob esponja|moca|moma|pharrell williams)/ig;
 const badCategories = [
     '10%',
     '20',
@@ -71,7 +71,10 @@ async function getCategories(categoriesObj) {
     const { page, sneakerTitle, storeObj, brands } = categoriesObj;
     try {
         const categoriesSet = new Set();
-        if (brands.length > 1) {
+        if (brands && brands.length > 1 &&
+            (!brands.map(brand => brand).includes("ADIDAS") && !brands.map(brand => brand).includes("Y-3")) &&
+            (!brands.map(brand => brand).includes("NIKE") && !brands.map(brand => brand).includes("NIKE SB"))
+        ) {
             categoriesSet.add('COLLABS');
         }
 
@@ -109,6 +112,7 @@ async function getCategories(categoriesObj) {
                     .replace("all-star", "tênis")
                     .replace("blazer", "tênis")
                     .replace("zoom", "tênis")
+                    .replace("plexus", "tênis")
                     .replace("gtx", "gore-tex")
                     .replace("boot", "bota")
                     .replace("sst", "bota")

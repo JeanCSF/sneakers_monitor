@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Sneakers } from "../utils/types";
 import { apiClient } from "../utils/api";
@@ -6,11 +6,9 @@ import { Card } from "../components/Card";
 
 export const Sneaker: React.FC = () => {
     const { id } = useParams();
-    const navigate = useNavigate();
-
 
     const [sneaker, setSneaker] = useState<Sneakers | null>(null);
-    const [similarSneakers, setSimilarSneakers] = useState<Sneakers[]>([]);
+    const [sameSneakerDiferentStore, setSameSneakerDiferentStore] = useState<Sneakers[]>([]);
 
     useEffect(() => {
         apiClient.get<Sneakers>(`/sneaker/${id}`).then((res) => {
@@ -18,45 +16,27 @@ export const Sneaker: React.FC = () => {
         });
     }, [id]);
 
-    const clearSneakerTitle = (sneaker: Sneakers) => {
-        let title = sneaker.sneakerTitle.replace(/"/g, "");
-
-        sneaker.colors.forEach((color) => {
-            title = title.replace(color, '');
-        });
-
-        sneaker.brands.forEach((brand) => {
-            title = title.replace(brand, '');
-        });
-
-        sneaker.categories.forEach((category) => {
-            title = title.replace(category, '');
-        });
-
-        title = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const words = title.split(" ");
-        const firstTwoWords = words.slice(0, 3);
-        return firstTwoWords.join(" ");
-    }
-
-    const clearedSneakerTitle = sneaker && clearSneakerTitle(sneaker!);
-    let url = `/sneakers?search=${clearedSneakerTitle}&`;
-    sneaker?.brands.forEach((brand) => {
-        url += `brand=${brand}&`;
-    });
-    sneaker?.categories.forEach((category) => {
-        url += `category=${category}&`;
-    });
 
     useEffect(() => {
-        if (clearedSneakerTitle) {
-            apiClient.get(`${url}limit=16`).then((res) => {
-                const filteredSimilarSneakers = res.data.sneakers.filter((similarSneaker: Sneakers) => similarSneaker._id !== id);
-                setSimilarSneakers(filteredSimilarSneakers);
-            });
+        const mountSameSneakerDiferentStoreUrl = () => {
+            return `/sneakers?search=${sneaker?.productReference}&`
         }
-    }, [clearedSneakerTitle, id, url]);
 
+        const fetchSameSneakerDiferentStore = async () => {
+            try {
+                const sameRes = await apiClient.get(`${mountSameSneakerDiferentStoreUrl()}limit=16`);
+                const filteredSameSneakers = sameRes.data.sneakers.filter((similarSneaker: Sneakers) => similarSneaker._id !== sneaker?._id);
+                setSameSneakerDiferentStore(filteredSameSneakers);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+
+        if (sneaker) {
+            fetchSameSneakerDiferentStore();
+        }
+
+    }, [sneaker]);
 
     return (
         <div className="flex flex-col">
@@ -68,33 +48,26 @@ export const Sneaker: React.FC = () => {
                             alt={sneaker.sneakerTitle}
                             className="w-96 h-auto rounded-lg shadow-md mb-8 md:mb-0 mx-auto md:mx-0" />
                         <div className="flex flex-col justify-between">
-                            {clearedSneakerTitle}
                             <h1 className="text-lg md:text-xl font-bold">{sneaker.sneakerTitle}</h1>
                             <p className="text-lg font-bold">Código: {sneaker.productReference && sneaker.productReference}</p>
                             <div className="flex flex-wrap items-center">
                                 {sneaker.brands.map((brand, index) => (
-                                    <span
+                                    <Link to={`/marca/${brand.toLowerCase()}`}
                                         key={index}
                                         className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-sm mr-2 mb-2 cursor-pointer"
                                         title={brand}
-                                        onClick={() => {
-                                            navigate(`/marca/${brand.toLowerCase()}`);
-                                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                                        }}
+                                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                                     >
                                         {brand}
-                                    </span>
+                                    </Link>
                                 ))}
                             </div>
-                            <span
+                            <Link to={`/loja/${sneaker.store.toLowerCase()}`}
                                 className="overflow-hidden whitespace-nowrap overflow-ellipsis max-w-[300px] cursor-pointer mt-4 text-lg md:text-xl"
-                                onClick={() => {
-                                    navigate(`/loja/${sneaker.store.toLowerCase()}`);
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
+                                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                             >
                                 Loja: {sneaker.store}
-                            </span>
+                            </Link>
                             <p className="text-lg md:text-xl font-bold">Preço: {sneaker.currentPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                             {sneaker.discountPrice && sneaker.discountPrice !== sneaker.currentPrice && (
                                 <p className="text-lg md:text-xl font-bold mb-4 text-green-500">C/ Desconto: {sneaker.discountPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
@@ -115,10 +88,11 @@ export const Sneaker: React.FC = () => {
                             </a>
                         </div>
                     </div>
-                    <h2 className="text-2xl md:text-3xl font-bold my-8">Sneakers Similares</h2>
+                    <h2 className="text-2xl md:text-3xl font-bold my-8">Em Outras Lojas:</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
-                        {similarSneakers.map(similarSneaker => (
-                            <Card key={similarSneaker._id} sneaker={similarSneaker} />
+                        {sameSneakerDiferentStore.length === 0 && <p>Nenhuma ocorrência</p>}
+                        {sameSneakerDiferentStore && sameSneakerDiferentStore.map(sameSneakerDiferentStore => (
+                            <Card key={sameSneakerDiferentStore._id} sneaker={sameSneakerDiferentStore} />
                         ))}
                     </div>
                 </div>

@@ -18,7 +18,7 @@ async function getImg(imgObj) {
             return productReference.trim();
         }
 
-        if (storeObj.name === "WallsGeneralStore") {
+        if (storeObj.name === "WallsGeneralStore" || storeObj.name === "Artwalk") {
             const img = await page.$eval(storeObj.selectors.img, (el) => el?.src);
             return img;
         }
@@ -26,7 +26,7 @@ async function getImg(imgObj) {
         const img = await page.$eval(storeObj.selectors.img, (el, storeObj) => {
             const imgElement = el.querySelector("img");
 
-            if (storeObj.name === "Maze" || storeObj.name === "WallsGeneralStore") {
+            if (storeObj.name === "Maze" || storeObj.name === "WallsGeneralStore" || storeObj.name === "GDLP") {
                 const aElement = el.querySelector("a")?.href;
                 return aElement;
             }

@@ -13,9 +13,9 @@ const urls = [
     // 'https://www.ratusskateshop.com.br/',
     // 'https://www.maze.com.br/',
     // 'https://www.sunika.com.br/',
-    'https://www.correderua.com.br/',
+    // 'https://www.correderua.com.br/',
     // 'https://www.artwalk.com.br/',
-    // 'https://www.gdlp.com.br/',
+    'https://www.gdlp.com.br/',
     // 'https://www.lojavirus.com.br/',
     // 'https://youridstore.com.br/',
 ];
@@ -249,14 +249,20 @@ const storesObj = {
         name: 'Artwalk',
         baseUrl: 'https://www.artwalk.com.br/',
         selectors: {
-            links: '.product-item:not(.produto-indisponivel)',
-            productReference: '.productReference',
-            img: '.product-image.is-selected, .ns-product-image.is-selected',
-            sneakerName: '.info-name-product > .productName',
-            price: '.ns-product-price__value',
-            availableSizes: '.dimension-Tamanho',
-            pagination: '',
+            links: '.vtex-product-summary-2-x-container.vtex-product-summary-2-x-containerNormal',
+            productReference: '.vtex-product-identifier-0-x-product-identifier__value',
+            img: 'img.vtex-store-components-3-x-productImageTag--products-list--main',
+            sneakerName: 'h1 span.vtex-store-components-3-x-productBrand',
+            price: 'span.vtex-product-price-1-x-sellingPrice',
+            availableSizes: 'div.valueWrapper.vtex-store-components-3-x-skuSelectorItem:not(.vtex-store-components-3-x-unavailable)',
+            pagination: '.vtex-search-result-3-x-totalProducts--layout',
+            colors: 'p.artwalk-store-theme-7-x-current_color_selected',
+            storeSku: 'meta[property="product:sku"]'
         },
+        searchFor: [
+            'tenis',
+            'calcados',
+        ]
     },
     gdlp: {
         name: 'GDLP',
@@ -269,7 +275,15 @@ const storesObj = {
             price: '.regular-price > span.price, .special-price > span.price',
             availableSizes: 'option',
             pagination: '.amount--has-pages',
+            colors: '.tab-content .std',
+            storeSku: 'head script:not([async],[type])',
         },
+        searchFor: [
+            // 'calcados',
+            'marca/on',
+            'calcados/vans',
+
+        ]
     },
     lojavirus: {
         name: 'LojaVirus',
@@ -290,7 +304,7 @@ const storesObj = {
 async function mainCluster() {
     const cluster = await Cluster.launch({
         concurrency: Cluster.CONCURRENCY_CONTEXT,
-        maxConcurrency: 20,
+        maxConcurrency: 5,
         monitor: true,
         puppeteerOptions: {
             args: [
@@ -300,8 +314,8 @@ async function mainCluster() {
                 '--start-maximized',
             ],
             defaultViewport: null,
-            headless: 'shell',
-            // headless: false,
+            // headless: 'shell',
+            headless: false,
         }
     });
     await cluster.task(async ({ page, data: { url } }) => {
@@ -357,6 +371,10 @@ async function mainCluster() {
 
                                 case "Maze":
                                     await cluster.queue({ url: `${url}&pageNumber=${i}` });
+                                    break;
+
+                                case "Artwalk":
+                                    await cluster.queue({ url: `${url}?page=${i}` });
                                     break;
 
                                 default:
