@@ -67,6 +67,25 @@ async function getCodeFromStore(codeFromStoreObj) {
             return productSku.toUpperCase();
         }
 
+        if (storeObj.name === "Artwalk") {
+            const productSku = await page.$eval(storeObj.selectors.storeSku, (el) => {
+                const productId = el?.getAttribute("content");
+                return productId;
+            });
+
+            return productSku;
+        }
+
+        if (storeObj.name === "GDLP") {
+            const productSku = await page.$$eval(storeObj.selectors.storeSku, (els) => {
+                const scriptWithProductId = els.find(el => el.innerText.includes('"productId"'));
+                return scriptWithProductId ? scriptWithProductId.innerText.match(/"productId":\s*"([^"]*)"/i)[1] : null;
+            });
+
+            return productSku;
+        }
+
+
     } catch (error) {
         console.error("Error getting code from store:", error);
         return null;

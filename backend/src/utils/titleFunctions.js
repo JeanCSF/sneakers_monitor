@@ -4,8 +4,8 @@ const { removeAccents } = require("./stringManipulation");
 async function getSneakerTitle(titleObj) {
     const { page, storeObj } = titleObj;
     try {
-        const sneakerTitle = await page.$eval(storeObj.selectors.sneakerName, (el) => el.innerText.trim());
-        return sneakerTitle.toUpperCase();
+        const sneakerTitle = await page.$eval(storeObj.selectors.sneakerName, (el) => el.innerText.toUpperCase().trim());
+        return sneakerTitle;
 
     } catch (error) {
         console.error("Error getting sneaker name:", error);

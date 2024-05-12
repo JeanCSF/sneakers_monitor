@@ -52,7 +52,10 @@ const sneakerController = {
 
             if (req.query.search) {
                 const regex = new RegExp('\\b' + req.query.search + '\\b', 'gi');
-                query.sneakerTitle = regex;
+                query.$or = [
+                    { sneakerTitle: regex },
+                    { productReference: regex }
+                ];
             }
 
             if (req.query.color) {

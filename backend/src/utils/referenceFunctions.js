@@ -4,6 +4,25 @@ async function getProductReference(referenceObj) {
     const { page, storeObj, sneakerTitle, brands } = referenceObj;
 
     try {
+        if (
+            storeObj.name === "CDR" ||
+            storeObj.name === "WallsGeneralStore" ||
+            storeObj.name === "GDLP"
+        ) {
+            const productReference = await page.$eval(storeObj.selectors.productReference, (el) => el?.innerText.toUpperCase().trim());
+            return productReference;
+        }
+
+        if (storeObj.name === "Artwalk") {
+            const productReference = await page.$eval(storeObj.selectors.productReference, (el) => el?.innerText.toUpperCase().trim());
+            if (brands.map(brand => brand).includes("ADIDAS")) {
+                return productReference.match(/^[^-]*/)[0];
+
+            }
+
+            return productReference;
+        }
+
         if (storeObj.name === "SunsetSkateshop") {
             let sneakerName = sneakerTitle;
             for (let i = 0; i < brands.length; i++) {
@@ -45,11 +64,6 @@ async function getProductReference(referenceObj) {
                 }
                 return "";
             }
-        }
-
-        if (storeObj.name === "WallsGeneralStore") {
-            const productReference = await page.$eval(storeObj.selectors.productReference, el => el?.innerText.toUpperCase().trim());
-            return productReference;
         }
 
         if (storeObj.name === "RatusSkateshop") {
@@ -182,10 +196,6 @@ async function getProductReference(referenceObj) {
             return match ? match[1].trim() : "";
         }
 
-        if (storeObj.name === "CDR") {
-            const productReference = await page.$eval(storeObj.selectors.productReference, (el) => el?.innerText.toUpperCase().trim());
-            return productReference;
-        }
     } catch (error) {
         console.error("Error getting product reference:", error);
     }

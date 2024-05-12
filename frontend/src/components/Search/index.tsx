@@ -24,6 +24,7 @@ export const Search: React.FC<SearchProps> = ({ isSearchOpen, setIsSearchOpen })
         navigate(`/buscar/${search}`);
         setIsSearchOpen(false);
         setSearch("");
+        window.scrollTo({ top: 0, behavior: 'smooth' })
     };
 
     return (
