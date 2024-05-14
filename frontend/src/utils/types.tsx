@@ -29,3 +29,7 @@ export type apiResponse = {
     totalCount: number;
 }
 
+export type Item = {
+    id: string;
+    name: string;
+};

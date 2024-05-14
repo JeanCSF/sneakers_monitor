@@ -24,7 +24,7 @@ export const AppRoutes = () => {
                 <Routes>
                     <Route path="/" element={<Navigate to="/home" />} />
                     <Route path="/home" element={<Main route="sneakers" />} />
-                    <Route path="/buscar/:search" element={<Main route="sneakers" />} />
+                    <Route path="/buscar/:search" element={<Main route="sneakers/search" />} />
                     <Route path="/sobre" element={<About />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/sneaker/:id" element={<Sneaker />} />

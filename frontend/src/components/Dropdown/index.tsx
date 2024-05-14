@@ -1,14 +1,11 @@
 import { HiOutlineXMark } from "react-icons/hi2";
 import { Link } from "react-router-dom";
 import { usePagination } from "../../utils/Hooks";
+import { Item } from "../../utils/types";
 
-export type DropdownItem = {
-    id: number;
-    name: string;
-}
 
 type DropdownProps = {
-    items: DropdownItem[];
+    items: Item[];
     isDropdownOpen: boolean;
     setIsDropdownOpen: (isDropdownOpen: boolean) => void;
     dropdownRoute: string;

@@ -20,6 +20,11 @@ async function getProductReference(referenceObj) {
 
             }
 
+            if (brands.map(brand => brand).includes("NEW BALANCE")) {
+                return productReference.replace(/-(\d+)$/, '').replace(/-/g, '');
+
+            }
+
             return productReference;
         }
 
@@ -157,14 +162,6 @@ async function getProductReference(referenceObj) {
                 .toUpperCase();
         }
 
-        if (storeObj.name === "LojaVirus") {
-            const productReference = await page.$eval(storeObj.selectors.productReference, (el) => {
-                const match = el.innerText.match(/\b([A-Za-z0-9-]+)\b$/);
-                return match ? match[1] : el.innerText;
-            })
-            return productReference.toUpperCase();
-        }
-
         if (storeObj.name === "Maze") {
             const productReference = await page.$eval(storeObj.selectors.productReference, (el) => {
                 const match = el.innerText.match(/:(.*?)\s*$/);
@@ -194,6 +191,11 @@ async function getProductReference(referenceObj) {
             const productReference = await page.$eval(storeObj.selectors.productReference, (el) => el.innerText.toUpperCase());
             const match = productReference.match(/REF\.:\s*(.*)/i);
             return match ? match[1].trim() : "";
+        }
+
+        if (storeObj.name === "LojaVirus") {
+            const productReference = await page.$eval(storeObj.selectors.sneakerName, (el) => el?.innerText.split(" "));
+            return productReference[productReference.length - 1].toUpperCase().trim();
         }
 
     } catch (error) {

@@ -15,8 +15,8 @@ const urls = [
     // 'https://www.sunika.com.br/',
     // 'https://www.correderua.com.br/',
     // 'https://www.artwalk.com.br/',
-    'https://www.gdlp.com.br/',
-    // 'https://www.lojavirus.com.br/',
+    // 'https://www.gdlp.com.br/',
+    'https://www.lojavirus.com.br/',
     // 'https://youridstore.com.br/',
 ];
 
@@ -256,12 +256,26 @@ const storesObj = {
             price: 'span.vtex-product-price-1-x-sellingPrice',
             availableSizes: 'div.valueWrapper.vtex-store-components-3-x-skuSelectorItem:not(.vtex-store-components-3-x-unavailable)',
             pagination: '.vtex-search-result-3-x-totalProducts--layout',
-            colors: 'p.artwalk-store-theme-7-x-current_color_selected',
+            colors: '.artwalk-store-theme-7-x-current_color_selected',
             storeSku: 'meta[property="product:sku"]'
         },
         searchFor: [
-            'tenis',
-            'calcados',
+            'tenis/adidas',
+            'tenis/nike',
+            'tenis/puma',
+            'tenis/jordan',
+            'tenis/converse',
+            'tenis/vans',
+            'tenis/under-armour',
+            'tenis/fila',
+            'tenis/new-balance',
+            'tenis/veja',
+            'calcados/sandalias/crocs',
+            'calcados/sandalias/rider',
+            'calcados/chinelos/rider',
+            'calcados/chinelos/jordan',
+            'calcados/chinelos/adidas',
+            'calcados/chinelos/nike',
         ]
     },
     gdlp: {
@@ -289,14 +303,23 @@ const storesObj = {
         name: 'LojaVirus',
         baseUrl: 'https://www.lojavirus.com.br/',
         selectors: {
-            links: '.fbits-item-lista-spot ',
-            productReference: '.segura-nome > h1',
-            img: 'figure[itemprop^="associatedMedia"]',
+            links: '.fbits-item-lista-spot > div:not(.fbits-spot-indisponivel)',
+            productReference: '.paddingbox',
+            img: '#galeria > a',
             sneakerName: '.fbits-produto-nome.prodTitle.title',
             price: '.precoPor',
             availableSizes: '.valorAtributo:not(.disabled)',
             pagination: '.fbits-paginacao ul li.pg a',
+            colors: '.atributos-cor > div[data-nomeatributo="Cor"] div > .selected .nomeCor',
+            storeSku: '.fbits-sku',
         },
+        searchFor: [
+            'converse-all-star-tipo-tenis',
+            'vans-tipo-tenis',
+            'veja',
+            'nike-tipo-tenis',
+            'new-balance'
+        ]
     },
     // 'https://youridstore.com.br/': 'youridstore',
 };
@@ -304,7 +327,7 @@ const storesObj = {
 async function mainCluster() {
     const cluster = await Cluster.launch({
         concurrency: Cluster.CONCURRENCY_CONTEXT,
-        maxConcurrency: 5,
+        maxConcurrency: 20,
         monitor: true,
         puppeteerOptions: {
             args: [
@@ -314,8 +337,8 @@ async function mainCluster() {
                 '--start-maximized',
             ],
             defaultViewport: null,
-            // headless: 'shell',
-            headless: false,
+            headless: 'shell',
+            // headless: false,
         }
     });
     await cluster.task(async ({ page, data: { url } }) => {

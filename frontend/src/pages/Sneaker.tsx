@@ -19,7 +19,7 @@ export const Sneaker: React.FC = () => {
 
     useEffect(() => {
         const mountSameSneakerDiferentStoreUrl = () => {
-            return `/sneakers?search=${sneaker?.productReference}&`
+            return `/sneakers/search/${sneaker?.productReference.trim()}?`
         }
 
         const fetchSameSneakerDiferentStore = async () => {
@@ -72,7 +72,12 @@ export const Sneaker: React.FC = () => {
                             {sneaker.discountPrice && sneaker.discountPrice !== sneaker.currentPrice && (
                                 <p className="text-lg md:text-xl font-bold mb-4 text-green-500">C/ Desconto: {sneaker.discountPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                             )}
-
+                            <p className="text-lg md:text-xl font-bold my-4 md:mt-8">Cor(es):</p>
+                            <div className="flex flex-wrap">
+                                {sneaker.colors.map((color, index) => (
+                                    <span key={index} className="inline-block bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-md text-sm mr-2 mb-2">{color}</span>
+                                ))}
+                            </div>
                             <p className="text-lg md:text-xl font-bold my-4 md:mt-8">Tamanhos disponíveis:</p>
                             <div className="flex overflow-x-auto">
                                 {sneaker.availableSizes.map((size, index) => (

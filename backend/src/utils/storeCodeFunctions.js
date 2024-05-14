@@ -85,6 +85,11 @@ async function getCodeFromStore(codeFromStoreObj) {
             return productSku;
         }
 
+        if (storeObj.name === "LojaVirus") {
+            const productSku = await page.$eval(storeObj.selectors.storeSku, el => el?.innerText.split(" ")[1].toUpperCase().trim());
+            return productSku;
+        }
+
 
     } catch (error) {
         console.error("Error getting code from store:", error);

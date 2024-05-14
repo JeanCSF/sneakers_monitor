@@ -1,15 +1,32 @@
-const DEV = import.meta.env.DEV;
-import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
+import { useCategories } from "../../utils/Hooks";
 import { FaBarsStaggered } from "react-icons/fa6";
 import { HiOutlineXMark } from "react-icons/hi2";
 
 const logo = "/favicon.ico"
-import { Dropdown, DropdownItem } from "../Dropdown";
+import { Dropdown } from "../Dropdown";
 import { Search } from "../Search";
 
+import { ToggleButton } from "../ToggleButton";
+
+import { CiCloudSun } from "react-icons/ci";
+import { CiSun } from "react-icons/ci";
+import { Item } from "../../utils/types";
 
 export const Navbar: React.FC = () => {
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        const savedMode = localStorage.getItem('darkMode');
+        return savedMode ? JSON.parse(savedMode) : false;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+        document.documentElement.classList.toggle('dark', isDarkMode);
+    }, [isDarkMode]);
+
+    const toggleTheme = () => {
+        setIsDarkMode(!isDarkMode);
+    };
 
     const links = useMemo(() => [
         { name: "HOME", link: "/", isDropdown: false },
@@ -20,51 +37,21 @@ export const Navbar: React.FC = () => {
         { name: "API", link: "https://api.snkrmagnet.com.br", isDropdown: false },
     ], []);
 
-    const [categories, setCategories] = useState<DropdownItem[]>([]);
-    const [stores, setStores] = useState<DropdownItem[]>([]);
-    const [brands, setBrands] = useState<DropdownItem[]>([]);
-    const [selectedDropdownItems, setSelectedDropdownItems] = useState<DropdownItem[]>([]);
+    const { categories, stores, brands } = useCategories();
+
+    const [selectedDropdownItems, setSelectedDropdownItems] = useState<Item[]>([]);
     const [dropdownType, setDropdownType] = useState<string>("");
-
-    const fetchItems = async (route: string, setData: (data: DropdownItem[]) => void) => {
-        const response = await axios.get(`${DEV ? "http://localhost:3001/sneakers" : "https://api.snkrmagnet.com.br/sneakers"}/${route}`);
-        setData(response.data);
-    };
-
-    useEffect(() => {
-        const fetchDropdownItems = async () => {
-            for (const link of links) {
-                if (link.isDropdown) {
-                    switch (link.route) {
-                        case "categoria":
-                            await fetchItems("categories", setCategories);
-                            break;
-                        case "loja":
-                            await fetchItems("stores", setStores);
-                            break;
-                        case "marca":
-                            await fetchItems("brands", setBrands);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-        }
-
-        fetchDropdownItems();
-    }, [links]);
 
     const [open, setOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
     return (
-        <header className="dark:bg-gray-900 bg-gray-100 shadow-md w-full sticky top-0 left-0">
+        <header className="dark:bg-gray-900 bg-gray-100 shadow-md w-full sticky top-0 left-0 z-50">
             <div className="md:px-10 py-4 px-4 md:flex justify-between items-center">
-                <a href="/" className="flex text-3xl md:text-xl cursor-pointer items-center gap-1 dark:text-white">
+                <a href="/" className="flex text-3xl md:text-xl cursor-pointer items-center gap-2 dark:text-white">
                     <img src={logo} alt="logo" width={48} title="Snkr Magnet" />
-                    <span className="font-bold">SNKR MAGNET</span>
+                    <span className="font-bold sm:hidden lg:block">SNKR MAGNET</span>
                 </a>
 
                 <div
@@ -98,14 +85,23 @@ export const Navbar: React.FC = () => {
                             </a>
                         </li>
                     ))}
-                    <button
-                        type="button"
-                        className="flex items-center font-bold btn  dark:text-white md:ml-1 rounded md:static p-1 ml-2"
-                        title="Buscar"
-                        onMouseEnter={() => setIsSearchOpen(true)}
-                        onMouseLeave={() => setOpen(false)}>
-                        BUSCAR
-                    </button>
+                    <li>
+                        <button
+                            type="button"
+                            className="flex items-center font-bold btn  dark:text-white md:ml-1 rounded md:static p-1 ml-2 md:mb-0 mb-5"
+                            title="Buscar"
+                            onMouseEnter={() => setIsSearchOpen(true)}
+                            onMouseLeave={() => setOpen(false)}>
+                            BUSCAR
+                        </button>
+                    </li>
+                    <li>
+                        <div
+                            onClick={toggleTheme}
+                            className="ml-3 cursor-pointer flex items-center z-50">
+                            <CiSun className="w-5 h-5 dark:text-white" /><ToggleButton isDarkMode={isDarkMode} /><CiCloudSun className="w-5 h-5 dark:text-white" />
+                        </div>
+                    </li>
                 </ul>
             </div>
 

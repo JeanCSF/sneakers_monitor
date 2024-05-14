@@ -59,15 +59,6 @@
                         }
                     },
                     {
-                        "name": "search",
-                        "in": "query",
-                        "description": "Pesquisar pelo nome do sneaker",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "color",
                         "in": "query",
                         "description": "Cor(es) do sneaker",
@@ -100,6 +91,234 @@
                         "name": "brand",
                         "in": "query",
                         "description": "Marca(s) do sneaker",
+                        "required": false,
+                        "style": "form",
+                        "explode": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "description": "Categoria(s) do sneaker",
+                        "required": false,
+                        "style": "form",
+                        "explode": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    {
+                        "name": "orderBy",
+                        "in": "query",
+                        "description": "Ordenar os sneakers por preço ou data.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "price-asc",
+                                "price-desc",
+                                "date-asc",
+                                "date-desc"
+                            ],
+                            "default": "date-desc"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso ao obter a lista de sneakers.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "_id": {
+                                                "type": "string"
+                                            },
+                                            "srcLink": {
+                                                "type": "string"
+                                            },
+                                            "productReference": {
+                                                "type": "string"
+                                            },
+                                            "store": {
+                                                "type": "string"
+                                            },
+                                            "brands": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "img": {
+                                                "type": "string"
+                                            },
+                                            "sneakerTitle": {
+                                                "type": "string"
+                                            },
+                                            "categories": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "colors": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "currentPrice": {
+                                                "type": "number"
+                                            },
+                                            "discountPrice": {
+                                                "type": "number"
+                                            },
+                                            "priceHistory": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "price": {
+                                                            "type": "number"
+                                                        },
+                                                        "date": {
+                                                            "type": "string",
+                                                            "format": "date-time"
+                                                        },
+                                                        "_id": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "availableSizes": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "number"
+                                                }
+                                            },
+                                            "codeFromStore": {
+                                                "type": "string"
+                                            },
+                                            "createdAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "updatedAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "__v": {
+                                                "type": "number"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/sneakers/search/{search}": {
+            "get": {
+                "tags": [
+                    "Endpoints"
+                ],
+                "summary": "Pesquisar por sneakers",
+                "description": "Retorna uma lista de todos os sneakers de acordo com o termo pesquisado.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "path",
+                        "description": "Termo a ser pesquisado",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Número da página para paginação",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Número máximo de itens por página",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "minPrice",
+                        "in": "query",
+                        "description": "Preço minimo do sneaker",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "maxPrice",
+                        "in": "query",
+                        "description": "Preço máximo do sneaker",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "color",
+                        "in": "query",
+                        "description": "Cor(es) do sneaker",
+                        "required": false,
+                        "style": "form",
+                        "explode": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "Tamanho(s) do sneaker",
+                        "required": false,
+                        "style": "form",
+                        "explode": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "number",
+                                "format": "float"
+                            }
+                        }
+                    },
+                    {
+                        "name": "store",
+                        "in": "query",
+                        "description": "Loja(s) do sneaker",
                         "required": false,
                         "style": "form",
                         "explode": true,

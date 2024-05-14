@@ -20,6 +20,7 @@ export const ToggleButton: React.FC<ToggleButtonProps> = ({ isDarkMode }) => {
             type="button"
             onClick={toggleButton}
             className={`w-12 h-6 flex items-center rounded-full ${isActive ? 'bg-blue-500 justify-center' : 'bg-gray-300'}`}
+            title='Mudar tema'
         >
             <div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${isActive ? 'translate-x-3' : 'translate-x-1'}`}></div>
         </button>
