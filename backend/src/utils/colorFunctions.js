@@ -451,6 +451,14 @@ async function getColors(colorsObj) {
             }
         }
 
+        if (storeObj.name === "LojaVirus") {
+            const colorsElement = await page.$eval(storeObj.selectors.colors, el => el.innerText.toUpperCase().split(' '));
+
+            if (colorsElement) {
+                colorsElement.forEach(color => colorsSet.add(color));
+            }
+        }
+
         const colorsArray = Array.from(colorsSet);
         return [...colorsArray];
     } catch (error) {

@@ -66,12 +66,13 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
 
     return (
         <div className="flex flex-col sm:flex-row justify-between items-center my-4">
-            <div className="mb-2 sm:mb-0 dark:text-gray-400">
-                <p>
+            <div className="mb-2 sm:mb-0 dark:text-gray-400 flex items-center">
+                <p className="mr-3">
                     Página {currentPage} de {totalPages}
                 </p>
-                <p>
-                    Total de itens: {totalCount}
+                |
+                <p className="ml-3">
+                    Sneakers: {totalCount}
                 </p>
             </div>
             <div className="flex items-center justify-center">
@@ -86,7 +87,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
                 {currentPage > 2 && (
                     <button
                         onClick={() => handlePageChange(1)}
-                        className="px-3 py-1 mx-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md"
+                        className="px-2 py-1 mx-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md"
                     >
                         1
                     </button>
@@ -95,7 +96,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
                 {currentPage < totalPages - 1 && (
                     <button
                         onClick={() => handlePageChange(totalPages)}
-                        className="px-3 py-1 mx-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md"
+                        className="px-2 py-1 mx-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md"
                     >
                         {totalPages}
                     </button>

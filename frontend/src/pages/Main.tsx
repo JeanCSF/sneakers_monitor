@@ -28,7 +28,11 @@ export const Main: React.FC<MainPageProps> = ({ route }) => {
 
     const [searchParams] = useSearchParams();
     const orderBy = searchParams.get('orderBy') || undefined;
-    const color = searchParams.get('color') || undefined;
+    const colors = searchParams.getAll('color') || undefined;
+    const sizes = searchParams.getAll('size') || undefined;
+    const categories = searchParams.getAll('category') || undefined;
+    const stores = searchParams.getAll('store') || undefined;
+    const brands = searchParams.getAll('brand') || undefined;
 
     const { store, brand, category, search } = useParams<{ store?: string; brand?: string; category?: string; search?: string }>();
     const urlParam = store || brand || category || search;
@@ -36,9 +40,9 @@ export const Main: React.FC<MainPageProps> = ({ route }) => {
 
     const [sneakers, setSneakers] = useState<Sneakers[]>([]);
 
-    const url = `${urlParam && !search ? `${route}/${urlParam}` : `${route}`}`;
-    const getSneakers = useSneakers(url, currentPage, search, orderBy, color);
-    
+    const url = `${urlParam ? `${route}/${urlParam}` : `${route}`}`;
+    const getSneakers = useSneakers(url, currentPage, search, orderBy, colors, sizes, categories, stores, brands);
+
     useEffect(() => {
         if (getSneakers.data) {
             setSneakers(getSneakers.data.sneakers);
@@ -51,23 +55,26 @@ export const Main: React.FC<MainPageProps> = ({ route }) => {
 
 
     return (
-        <div className="container mx-auto px-4 flex flex-col">
+        <div className="container mx-auto px-1 md:px-4 flex flex-col">
             {sneakers.length === 0 && (
-                <div className="h-screen">
-                    <p className="dark:text-gray-400 flex items-center justify-center">Nenhum resultado para: "{urlParam}"</p>
+                <div className="h-screen flex flex-col justify-center items-center">
+                    <p className="dark:text-gray-400">Sem resultados para os filtros aplicados</p>
+                    <p
+                        className="p-1 rounded text-center cursor-pointer bg-blue-400 text-white"
+                        onClick={() => window.history.back()}>Voltar</p>
                 </div>
             )}
             {sneakers.length !== 0 && (
                 <>
-                    <p className="dark:text-gray-400 flex items-center justify-center">- {urlParam?.toUpperCase()} -</p>
                     <div
                         className="flex dark:text-white md:ml-1 rounded md:static p-1 ml-2 cursor-pointer w-7 h-7 text-2xl"
                         title="Filtrar Resultados"
                         onClick={() => setIsSortOpen(true)}>
                         <TbFilterSearch />
                     </div>
+                    <p className="dark:text-gray-400 flex items-center justify-center">- {urlParam?.toUpperCase()} -</p>
                     <Pagination currentPage={currentPage} totalPages={totalPages} hasNextPage={hasNextPage} totalCount={totalCount} onPageChange={setCurrentPage} />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-x-1 gap-y-3 md:gap-x-4">
                         {sneakers.map(sneaker => (
                             <Card key={sneaker?._id} sneaker={sneaker} />
                         ))}
@@ -76,8 +83,6 @@ export const Main: React.FC<MainPageProps> = ({ route }) => {
                     <Sort isSortOpen={isSortOpen} setIsSortOpen={setIsSortOpen} />
                 </>
             )}
-
         </div>
-
     );
 }

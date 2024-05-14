@@ -22,7 +22,7 @@ function createSearchUrl(url, term) {
     }
 
     if (url.includes("lojavirus")) {
-        return [`${url}${term === "converse" ? 'converse-all-star' : term.replace(/\s+/g, "-").toLowerCase()}-tipo-tenis`];
+        return [`${url}${term}`];
     }
 
     if (url.includes("sunika")) {
@@ -190,12 +190,9 @@ async function getCurrentPage(currentPageObj) {
         switch (storeName) {
             case "CDR":
             case "Artwalk":
-                const cdrMatch = url.match(/=(\d+)/);
-                return cdrMatch ? parseInt(cdrMatch[1]) : 1;
-
             case "LojaVirus":
-                const queryParams = new URLSearchParams(url);
-                return parseInt(queryParams.get("pagina")) || 1;
+                const pageMatch = url.match(/=(\d+)/);
+                return pageMatch ? parseInt(pageMatch[1]) : 1;
 
             case "GDLP":
                 const lastNumberMatch = url.match(/\/(\d+)(\/?)$/);

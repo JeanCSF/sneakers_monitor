@@ -12,6 +12,9 @@ router.route("/")
 router.route("/sneakers")
     .get((req, res) => sneakerController.getAll(req, res));
 
+router.route("/sneakers/search/:search")
+    .get((req, res) => sneakerController.getSearch(req, res));
+
 router.route("/sneaker/:id")
     .get((req, res) => sneakerController.get(req, res));
 
