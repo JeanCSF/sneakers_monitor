@@ -16,8 +16,8 @@ const urls = [
     // 'https://www.correderua.com.br/',
     // 'https://www.artwalk.com.br/',
     // 'https://www.gdlp.com.br/',
-    'https://www.lojavirus.com.br/',
-    // 'https://youridstore.com.br/',
+    // 'https://www.lojavirus.com.br/',
+    'https://youridstore.com.br/',
 ];
 
 const storesObj = {
@@ -158,7 +158,7 @@ const storesObj = {
         selectors: {
             links: '.ui.card.produto.product-in-card.in-stock',
             productReference: '.row.desc_info > .column_1',
-            img: '.produto.easyzoom',
+            img: 'a[data-standard][data-video-url]',
             sneakerName: '#produto-nome',
             price: '#preco',
             availableSizes: '.ui.variacao.check:not(.sold) > button.ui.basic.button',
@@ -224,23 +224,23 @@ const storesObj = {
             storeSku: '.acoes-flutuante > .acoes-produto[data-variacao-id=""]'
         },
         searchFor: [
-            // 'fila',
-            // 'nike-ebernon',
-            // 'mad-rats',
-            // '02-nike-court-borough',
-            // '01-air-max',
-            // '2-m2k',
-            // 'air-force',
-            // 'nike-sb',
-            // 'hocks',
-            // '01-qix-20410829',
-            // '1-redley',
-            // 'adidas',
-            // 'puma',
-            // 'dc-shoes',
-            // 'air-max-correlate-e-command',
-            // 'new-balance-22697012',
-            // 'nike-blazer',
+            'fila',
+            'nike-ebernon',
+            'mad-rats',
+            '02-nike-court-borough',
+            '01-air-max',
+            '2-m2k',
+            'air-force',
+            'nike-sb',
+            'hocks',
+            '01-qix-20410829',
+            '1-redley',
+            'adidas',
+            'puma',
+            'dc-shoes',
+            'air-max-correlate-e-command',
+            'new-balance-22697012',
+            'nike-blazer',
             'nike-dunk',
             'chinelo-20723668',
         ]
@@ -293,10 +293,21 @@ const storesObj = {
             storeSku: 'head script:not([async],[type])',
         },
         searchFor: [
-            // 'calcados',
+            'calcados/adidas',
+            'calcados/asics',
+            'calcados/converse',
+            'calcados/crocs',
+            'calcados/fila',
+            'calcados/mizuno',
+            'calcados/new-balance',
+            'calcados/nike',
             'marca/on',
+            'calcados/ous',
+            'calcados/puma',
+            'calcados/reebok',
+            'calcados/rider',
             'calcados/vans',
-
+            'calcados/hoka',
         ]
     },
     lojavirus: {
@@ -321,13 +332,45 @@ const storesObj = {
             'new-balance'
         ]
     },
-    // 'https://youridstore.com.br/': 'youridstore',
+    youridstore: {
+        name: 'YourID',
+        baseUrl: 'https://www.youridstore.com.br/',
+        selectors: {
+            links: 'h2.product-name',
+            productReference: '.sku > .value',
+            img: '#zoom1',
+            sneakerName: 'h1',
+            price: '.price',
+            availableSizes: '#configurable_swatch_c2c_tamanho li',
+            pagination: '#narrow-by-list > dd',
+            colors: '#select_label_c2c_cor',
+            storeSku: '',
+        },
+        searchFor: [
+            'tenis/tenis-adidas.html',
+            'tenis/tenis-asics.html',
+            'tenis/sandalia-crocs.html',
+            'tenis/tenis-converse.html',
+            'tenis/tenis-fila.html',
+            'tenis/tenis-hoka.html',
+            'tenis/tenis-air-jordan.html',
+            'tenis/tenis-lacoste.html',
+            'tenis/tenis-mizuno.html',
+            'tenis/tenis-new-balance.html',
+            'tenis/tenis-nike.html',
+            'tenis/on-running.html',
+            'tenis/tenis-puma.html',
+            'tenis/tenis-reebok-classic.html',
+            'tenis/tenis-ous.html',
+            'tenis/tenis-vans.html'
+        ]
+    }
 };
 
 async function mainCluster() {
     const cluster = await Cluster.launch({
         concurrency: Cluster.CONCURRENCY_CONTEXT,
-        maxConcurrency: 20,
+        maxConcurrency: 15,
         monitor: true,
         puppeteerOptions: {
             args: [
@@ -337,8 +380,9 @@ async function mainCluster() {
                 '--start-maximized',
             ],
             defaultViewport: null,
-            headless: 'shell',
-            // headless: false,
+            // headless: 'shell',
+            headless: false,
+            // slowMo: 100,
         }
     });
     await cluster.task(async ({ page, data: { url } }) => {
@@ -364,10 +408,13 @@ async function mainCluster() {
         await cluster.task(async ({ page, data: { url } }) => {
             try {
                 const storeObj = storesObj[url.replace(/.*?\/\/(?:www\.)?(.*?)\.com.*/, '$1')];
+
                 await interceptRequests(page, storeObj.name);
                 const currentPage = await getCurrentPage({ url, storeName: storeObj.name });
+
                 if (currentPage === 1) {
                     const pageNumbers = await getNumOfPages({ page, storeName: storeObj.name, storeSelectors: storeObj.selectors, url });
+
                     if (pageNumbers > 1) {
                         for (let i = 2; i <= pageNumbers; i++) {
                             switch (storeObj.name) {
@@ -400,6 +447,10 @@ async function mainCluster() {
                                     await cluster.queue({ url: `${url}?page=${i}` });
                                     break;
 
+                                case "YourID":
+                                    await cluster.queue({ url: `${url}?p=${i}` });
+                                    break;
+
                                 default:
                                     break;
                             }
@@ -420,6 +471,7 @@ async function mainCluster() {
         for (const url of searchUrls) {
             cluster.queue({ url });
         }
+
         await cluster.idle();
         console.log(`${allResultsSet.size} total results`);
         await processResultsCluster([...allResultsSet]);
@@ -440,9 +492,9 @@ async function mainCluster() {
             cluster.queue({ url });
         }
         await cluster.idle();
-        await cluster.close();
     }
 
+    await cluster.close();
 }
 
 module.exports = mainCluster;

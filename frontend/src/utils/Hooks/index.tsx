@@ -6,6 +6,7 @@ import { apiResponse } from "../types";
 
 import { PaginationContext } from "../Contexts/PaginationContext";
 import { CategoriesContext } from "../Contexts/CategoriesContext";
+import { LoadingContext } from "../Contexts/LoadingContext";
 
 export const useSneakers = (
   queryKey: string,
@@ -17,12 +18,16 @@ export const useSneakers = (
   categories?: string[],
   stores?: string[],
   brands?: string[],
+  minPrice?: string,
+  maxPrice?: string
 ): UseQueryResult<apiResponse> => {
   const params = new URLSearchParams({
     limit: '12',
     page: page.toString(),
     ...(search && { search }),
     ...(orderBy && { orderBy }),
+    ...(minPrice && { minPrice }),
+    ...(maxPrice && { maxPrice }),
   });
 
   if (colors && colors.length > 0) {
@@ -63,7 +68,6 @@ export const useSneakers = (
   );
 }
 
-
 export const usePagination = () => {
   const context = useContext(PaginationContext);
   if (!context) {
@@ -76,6 +80,14 @@ export const useCategories = () => {
   const context = useContext(CategoriesContext);
   if (!context) {
     throw new Error('useCategories must be used within a CategoriesProvider');
+  }
+  return context;
+};
+
+export const useLoading = () => {
+  const context = useContext(LoadingContext);
+  if (!context) {
+    throw new Error('useLoading must be used within a LoadingProvider');
   }
   return context;
 };

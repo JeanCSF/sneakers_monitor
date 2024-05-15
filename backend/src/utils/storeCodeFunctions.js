@@ -90,6 +90,14 @@ async function getCodeFromStore(codeFromStoreObj) {
             return productSku;
         }
 
+        if (storeObj.name === "YourID") {
+            const productSku = await page.evaluate(() => {
+                return window.dataLayer[0].productId
+            });
+
+            return productSku;
+        }
+
 
     } catch (error) {
         console.error("Error getting code from store:", error);

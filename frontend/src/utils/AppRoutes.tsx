@@ -11,7 +11,6 @@ import { Admin } from "../pages/Admin";
 import { About } from "../pages/About";
 import { Sneaker } from "../pages/Sneaker";
 
-
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import { queryClient } from "./api";
@@ -39,3 +38,4 @@ export const AppRoutes = () => {
 
 
 }
+

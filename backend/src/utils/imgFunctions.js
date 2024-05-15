@@ -23,10 +23,18 @@ async function getImg(imgObj) {
             return img;
         }
 
+        if (storeObj.name === "Maze") {
+            return await page.$eval(storeObj.selectors.img, el => el?.getAttribute("data-standard"));
+        }
+
+        if (storeObj.name === "YourID") {
+            return await page.$eval(storeObj.selectors.img, el => el?.href);
+        }
+
         const img = await page.$eval(storeObj.selectors.img, (el, storeObj) => {
             const imgElement = el.querySelector("img");
 
-            if (storeObj.name === "Maze" || storeObj.name === "WallsGeneralStore" || storeObj.name === "GDLP") {
+            if (storeObj.name === "WallsGeneralStore" || storeObj.name === "GDLP") {
                 const aElement = el.querySelector("a")?.href;
                 return aElement;
             }

@@ -367,13 +367,27 @@ async function getColors(colorsObj) {
                     ostoreColorsMap[match[i]] && colorsSet.add(ostoreColorsMap[match[i]]);
                 }
             } else {
-                styleAttribute.includes('BRANCO-PRETO') && colorsSet.add(['BRANCO', 'PRETO']);
-                styleAttribute.includes('PICTUREMESSAGE_KSUXD5KR') && colorsSet.add('MULTICOLORIDO');
-                styleAttribute.includes('UNDEFINED') && colorsSet.add(getColorsByProductReference(productReference));
+                if (styleAttribute.includes('BRANCO-PRETO')) {
+                    colorsSet.add('BRANCO');
+                    colorsSet.add('PRETO');
+                }
+
+                if (styleAttribute.includes('PICTUREMESSAGE_KSUXD5KR')) {
+                    colorsSet.add('MULTICOLORIDO');
+
+                }
+
+                if (styleAttribute.includes('UNDEFINED')) {
+                    const colors = getColorsByProductReference(productReference)
+                    colors.forEach(color => {
+                        color = processColorsString(color);
+                        color.forEach(colorVariant => colorsSet.add(colorVariant.toUpperCase()));
+                    });
+                }
             }
         }
 
-        if (storeObj.name === "RatusSkateshop") {
+        if (storeObj.name === "RatusSkateshop" || storeObj.name === "YourID") {
             const colorsElement = await page.$eval(storeObj.selectors.colors, (el) => el?.innerText.trim());
             if (colorsElement) {
                 colorsSet.add(colorsElement.toUpperCase());
@@ -463,8 +477,6 @@ async function getColors(colorsObj) {
         return [...colorsArray];
     } catch (error) {
         console.error("Error getting colors:", error);
-        console.log("Sneaker title:", sneakerTitle);
-        console.log("User Agent:", await page.evaluate(() => navigator.userAgent));
     }
 }
 

@@ -1,11 +1,18 @@
 import { Link } from "react-router-dom";
 import { Sneakers } from "../../utils/types";
+import { useLoading } from "../../utils/Hooks";
 
 interface CardProps {
     sneaker: Sneakers;
 }
 
 export const Card: React.FC<CardProps> = ({ sneaker }) => {
+    const { setIsLoading } = useLoading();
+
+    const handleCardClick = () => {
+        setIsLoading(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    };
     return (
         <div className="w-full">
             <div className="bg-gray-100 dark:bg-gray-800 rounded-md shadow-md">
@@ -15,7 +22,7 @@ export const Card: React.FC<CardProps> = ({ sneaker }) => {
                             src={sneaker.img}
                             alt={sneaker.sneakerTitle}
                             className="w-full h-48 md:h-64 lg:h-72 xl:h-80 object-bottom object-cover rounded-md cursor-pointer"
-                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                            onClick={handleCardClick}
                         />
                     </Link>
                     <a
@@ -45,37 +52,24 @@ export const Card: React.FC<CardProps> = ({ sneaker }) => {
                 <div className="p-1 md:p-3">
                     <p className="text-gray-600 dark:text-gray-400 mb-1 flex">
                         <Link to={`/sneaker/${sneaker._id}`}
-                            className="font-semibold mb-1 overflow-hidden whitespace-nowrap overflow-ellipsis max-w-[180px] md:max-w-[300px] cursor-pointer"
-                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                            className="text-xs font-semibold mb-1 overflow-hidden whitespace-nowrap overflow-ellipsis max-w-[180px] md:max-w-[300px] cursor-pointer"
+                            onClick={handleCardClick}
                         >
                             {sneaker.sneakerTitle}
                         </Link>
                     </p>
                     <p className="text-gray-600 dark:text-gray-400 mb-2 flex justify-between items-center">
                         <Link to={`/loja/${sneaker.store.toLowerCase()}`}
-                            className="overflow-hidden whitespace-nowrap overflow-ellipsis max-w-[180px] cursor-pointer"
-                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                            className="text-xs overflow-hidden whitespace-nowrap overflow-ellipsis max-w-[180px] cursor-pointer"
+                            onClick={handleCardClick}
 
                         >
                             {sneaker.store}
                         </Link>
                     </p>
-                    <div className="flex flex-wrap items-center">
-                        {sneaker.brands.map((brand, index) => (
-                            <Link to={`/marca/${brand.toLowerCase()}`}
-                                key={index}
-                                className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full mr-2 mb-2 cursor-pointer"
-                                title={brand}
-                                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-
-                            >
-                                {brand}
-                            </Link>
-                        ))}
-                    </div>
                     <div className="flex overflow-x-auto mt-4 mx-2">
                         {sneaker.availableSizes.map((size, index) => (
-                            <span key={index} className="inline-block bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-md text-sm mr-2 mb-2 h-7">{size}</span>
+                            <span key={index} className="inline-block bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-md text-xs mr-2 mb-2 h-6">{size}</span>
                         ))}
                     </div>
                 </div>

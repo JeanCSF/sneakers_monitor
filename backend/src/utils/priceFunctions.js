@@ -11,6 +11,8 @@ async function getPrice(priceObj) {
 
     try {
         const price = await page.$eval(storeObj.selectors.price, (el, storeObj) => {
+
+            if (storeObj.name === "WallsGeneralStore") { return el.innerText.trim(); }
             const removeDelTag = (element) => {
                 const delElement = element.querySelector('del');
                 if (delElement) {

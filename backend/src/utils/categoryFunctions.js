@@ -156,6 +156,7 @@ async function getCategories(categoriesObj) {
         return [...categoriesSet];
     } catch (error) {
         console.error("Error getting categories:", error);
+
     }
 }
 

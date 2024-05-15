@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { usePagination, useCategories } from "../../utils/Hooks";
+import { usePagination, useCategories, useLoading } from "../../utils/Hooks";
 
 import { HiOutlineXMark } from "react-icons/hi2";
 import { TbFilterOff } from "react-icons/tb";
@@ -15,14 +15,18 @@ type Colors = {
 
 };
 export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
-    const { setCurrentPage } = usePagination();
     const { categories, stores, brands } = useCategories();
     const [searchParams, setSearchParams] = useSearchParams();
+    const { setCurrentPage } = usePagination();
+    const { setIsLoading } = useLoading();
+
     const [selectedColors, setSelectedColors] = useState<string[]>([]);
     const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedStores, setSelectedStores] = useState<string[]>([]);
     const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+    const [minPrice, setMinPrice] = useState<string>("");
+    const [maxPrice, setMaxPrice] = useState<string>("");
     const [orderBy, setOrderBy] = useState<string>("");
 
     const colors: Colors = {
@@ -61,68 +65,69 @@ export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
     };
 
     const sizes = [
-        '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
-        '11', '12', '13', '14', '15', '16', '17', '17.5', '18', '18.5',
+        /*'1', '3', '4', '5', '6', '7', '8', '9', '10',
+        '11', '12', '13', '14',*/'2', '15', '16', '17', '17.5', '18', '18.5',
         '19', '20', '21', '22', '22.5', '23', '24', '25', '26', '27',
         '28', '29', '30', '31', '32', '33', '33.5', '34', '34.5', '35',
         '35.5', '36', '36.5', '37', '37.5', '38', '38.5', '39', '39.5', '40',
         '40.5', '41', '41.5', '42', '42.5', '43', '43.5', '44', '44.5', '45',
-        '45.5', '46', '47', '48', '49', '50'
+        '45.5', '46', '47', '48', '49'/*, '50'*/
     ];
 
-    const toggleColor = (color: string) => {
-        if (selectedColors.map((c: string) => c.toLowerCase()).includes(color.toLowerCase())) {
-            selectedColors.splice(selectedColors.indexOf(color), 1);
-        } else {
-            selectedColors.push(color);
+    const toggleFilter = (filterType: string, value: string) => {
+        let selectedFilters;
+        console.log(value)
+        switch (filterType) {
+            case 'color':
+                selectedFilters = selectedColors;
+                break;
+            case 'size':
+                selectedFilters = selectedSizes;
+                break;
+            case 'category':
+                selectedFilters = selectedCategories;
+                break;
+            case 'store':
+                selectedFilters = selectedStores;
+                break;
+            case 'brand':
+                selectedFilters = selectedBrands;
+                break;
+            case 'orderby':
+                setOrderBy(value);
+                updateURL(1, value, selectedColors, selectedSizes, selectedCategories, selectedStores, selectedBrands, minPrice, maxPrice);
+                break;
+            case 'minprice':
+                setMinPrice(value);
+                minPrice !== '' && updateURL(1, orderBy, selectedColors, selectedSizes, selectedCategories, selectedStores, selectedBrands, minPrice, maxPrice);
+                break;
+            case 'maxprice':
+                setMaxPrice(value);
+                maxPrice !== '' && updateURL(1, orderBy, selectedColors, selectedSizes, selectedCategories, selectedStores, selectedBrands, minPrice, maxPrice);
+                break;
+            case 'reset':
+                setSelectedColors([]);
+                setSelectedSizes([]);
+                setSelectedCategories([]);
+                setSelectedStores([]);
+                setSelectedBrands([]);
+                setOrderBy("");
+                setMinPrice("");
+                setMaxPrice("");
+                break;
+            default:
+                return;
         }
 
-        updateURL(1, orderBy, selectedColors, selectedSizes, selectedCategories, selectedStores, selectedBrands);
-    };
-
-    const toggleSize = (size: string) => {
-        if (selectedSizes.map((c: string) => c).includes(size)) {
-            selectedSizes.splice(selectedSizes.indexOf(size), 1);
-        } else {
-            selectedSizes.push(size);
+        if (selectedFilters) {
+            const index = selectedFilters.indexOf(value);
+            if (index !== -1) {
+                selectedFilters.splice(index, 1);
+            } else {
+                selectedFilters.push(value);
+            }
+            updateURL(1, orderBy, selectedColors, selectedSizes, selectedCategories, selectedStores, selectedBrands, minPrice, maxPrice);
         }
-
-        updateURL(1, orderBy, selectedColors, selectedSizes, selectedCategories, selectedStores, selectedBrands);
-    };
-
-    const toggleCategory = (category: string) => {
-        if (selectedCategories.map((c: string) => c.toLowerCase()).includes(category.toLowerCase())) {
-            selectedCategories.splice(selectedCategories.indexOf(category), 1);
-        } else {
-            selectedCategories.push(category);
-        }
-
-        updateURL(1, orderBy, selectedColors, selectedSizes, selectedCategories, selectedStores, selectedBrands);
-    };
-
-    const toggleStore = (store: string) => {
-        if (selectedStores.map((c: string) => c.toLowerCase()).includes(store.toLowerCase())) {
-            selectedStores.splice(selectedStores.indexOf(store), 1);
-        } else {
-            selectedStores.push(store);
-        }
-
-        updateURL(1, orderBy, selectedColors, selectedSizes, selectedCategories, selectedStores, selectedBrands);
-    };
-
-    const toggleBrand = (brand: string) => {
-        if (selectedBrands.map((c: string) => c.toLowerCase()).includes(brand.toLowerCase())) {
-            selectedBrands.splice(selectedBrands.indexOf(brand), 1);
-        } else {
-            selectedBrands.push(brand);
-        }
-
-        updateURL(1, orderBy, selectedColors, selectedSizes, selectedCategories, selectedStores, selectedBrands);
-    };
-
-    const toggleOrderBy = (orderBy: string) => {
-        setOrderBy(orderBy);
-        updateURL(1, orderBy, selectedColors, selectedSizes, selectedCategories, selectedStores, selectedBrands);
     };
 
     const updateURL = (
@@ -132,14 +137,27 @@ export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
         sizes?: string[],
         categories?: string[],
         stores?: string[],
-        brands?: string[]
+        brands?: string[],
+        minPrice?: string,
+        maxPrice?: string
     ) => {
+        setIsLoading(true);
         const newSearchParams = new URLSearchParams(searchParams);
         newSearchParams.delete('page');
 
         newSearchParams.delete('orderBy');
         if (orderBy) {
-            newSearchParams.set('orderBy', orderBy);
+            newSearchParams.set('orderBy', orderBy.toString());
+        }
+
+        newSearchParams.delete('minPrice');
+        if (minPrice) {
+            newSearchParams.set('minPrice', minPrice?.toString() || '');
+        }
+
+        newSearchParams.delete('maxPrice');
+        if (maxPrice) {
+            newSearchParams.set('maxPrice', maxPrice?.toString() || '');
         }
 
         newSearchParams.delete('color');
@@ -181,26 +199,37 @@ export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
             const categories = searchParams.getAll('category');
             const stores = searchParams.getAll('store');
             const brands = searchParams.getAll('brand');
+            const orderBy = searchParams.get('orderBy');
+            const minPrice = searchParams.get('minPrice');
+            const maxPrice = searchParams.get('maxPrice');
+
 
             setSelectedColors(colors);
             setSelectedSizes(sizes);
             setSelectedCategories(categories);
             setSelectedStores(stores);
             setSelectedBrands(brands);
+            setOrderBy(orderBy?.toString() || '');
+            setMinPrice(minPrice?.toString() || '');
+            setMaxPrice(maxPrice?.toString() || '');
+            setIsLoading(false);
         }
 
         fetchSorting();
 
-    }, [searchParams]);
+    }, [searchParams, setIsLoading]);
 
     const resetSort = () => {
-        setSelectedColors([]);
-        setSelectedSizes([]);
-        setSelectedCategories([]);
-        setSelectedStores([]);
-        setSelectedBrands([]);
-        setOrderBy('');
-        updateURL(1);
+        const hasSorting = searchParams.get('orderBy') || searchParams.get('color') || searchParams.get('size') || searchParams.get('category') || searchParams.get('store') || searchParams.get('brand');
+        if (hasSorting) {
+            setSelectedColors([]);
+            setSelectedSizes([]);
+            setSelectedCategories([]);
+            setSelectedStores([]);
+            setSelectedBrands([]);
+            setOrderBy('');
+            updateURL(1);
+        }
     }
 
     return (
@@ -216,6 +245,7 @@ export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
                                     className="cursor-pointer"
                                     onClick={() => resetSort()}
                                     title="Limpar filtros"
+
                                 >
                                     <TbFilterOff className="w-9 h-9 text-gray-600 dark:text-white" />
                                 </div>
@@ -232,7 +262,8 @@ export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
                                 <select
                                     className="px-1 py-1 border rounded bg-gray-100 dark:bg-gray-800 w-64"
                                     value={searchParams.get('orderBy') || ""}
-                                    onChange={(e) => toggleOrderBy(e.target.value)}
+                                    onChange={(e) => toggleFilter("orderby", e.target.value)}
+                                    title="Ordenar por"
                                 >
                                     <option value="">Selecione</option>
                                     <option value="price-asc">Preço: menor » maior</option>
@@ -241,12 +272,33 @@ export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
                                     <option value="date-desc">Data: recente » antigo</option>
                                 </select>
                             </div>
+                            <p className="text-center font-semibold">Preço:</p>
+                            <div className="flex justify-center items-center mb-5 dark:text-gray-400">
+                                <input
+                                    type="number"
+                                    placeholder="Mínimo"
+                                    className="text-xs w-32 border bg-gray-100 dark:bg-gray-800 border-gray-300 rounded-md px-4 py-2 mr-2 focus:outline-none dark:text-gray-400"
+                                    value={minPrice || searchParams.get('minPrice') || ""}
+                                    onChange={(e) => setMinPrice(e.target.value)}
+                                    onBlur={() => toggleFilter("minprice", minPrice)}
+                                    title="Mínimo"
+                                />
+                                <input
+                                    type="number"
+                                    placeholder="Máximo"
+                                    className="text-xs w-32 border bg-gray-100 dark:bg-gray-800 border-gray-300 rounded-md px-4 py-2 focus:outline-none dark:text-gray-400"
+                                    value={maxPrice || searchParams.get('maxPrice') || ""}
+                                    onChange={(e) => setMaxPrice(e.target.value)}
+                                    onBlur={() => toggleFilter("maxprice", maxPrice)}
+                                    title="Máximo"
+                                />
+                            </div>
                             <p className="text-center font-semibold">Filtrar cor:</p>
                             <div className="grid md:grid-cols-7 grid-cols-5 gap-3 ">
                                 {Object.keys(colors).map(color => (
                                     <button
                                         key={color}
-                                        className={`block w-full h-9 md:h-8 px-4 py-2 text-left dark:hover:bg-gray-500 hover:bg-gray-300 cursor-pointer border border-gray-400 rounded-md opacity-50
+                                        className={`block w-full h-9 md:h-8 px-4 py-2 text-left dark:hover:bg-gray-500 hover:bg-gray-300 cursor-pointer border border-gray-400 rounded-md
                                                     ${color === "uv" ? 'uv-gradient' : ''}
                                                     ${color === "gum" ? 'gum-gradient' : ''}
                                                     ${color === "pantone" ? 'pantone' : ''}
@@ -257,10 +309,10 @@ export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
                                                     ${color === "multicolorido" ? 'multicolorido-gradient' : ''}
                                                     ${color === "animal print" ? 'animalprint' : ''}
                                                     ${color === "glow in the dark" ? 'gitd-gradient' : ''}
-                                                    ${selectedColors.includes(color) ? 'transform scale-110 px-3 py-1 opacity-100' : ''}`}
+                                                    ${selectedColors.includes(color) ? 'opacity-100 transform scale-125 px-3 py-1' : 'opacity-50'}`}
                                         style={{ backgroundColor: colors[color] }}
-                                        title={color}
-                                        onClick={() => toggleColor(color)}
+                                        title={color.split('')[0].toUpperCase() + color.slice(1)}
+                                        onClick={() => toggleFilter("color", color)}
                                     >
                                     </button>
                                 ))}
@@ -271,7 +323,7 @@ export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
                                     <button
                                         key={size}
                                         className={`flex items-center justify-center w-full h-9 md:h-8 px-4 py-2 text-left dark:hover:bg-gray-500 hover:bg-gray-300 cursor-pointer border border-gray-400 font-semibold ${selectedSizes.includes(size) ? 'bg-blue-500 text-white' : ''}`}
-                                        onClick={() => toggleSize(size)}
+                                        onClick={() => toggleFilter("size", size)}
                                     >
                                         {size}
                                     </button>
@@ -284,7 +336,7 @@ export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
                                         key={category.id}
                                         className={`w-28 text-center text-xs py-2 dark:hover:bg-gray-500 hover:bg-gray-300 cursor-pointer border border-gray-400 rounded-md
                                                     ${selectedCategories.includes(category.name.toLowerCase()) ? 'bg-blue-500 text-white' : ''}`}
-                                        onClick={() => toggleCategory(category.name.toLowerCase())}
+                                        onClick={() => toggleFilter("category", category.name.toLowerCase())}
                                     >
                                         {category.name}
                                     </button>
@@ -297,7 +349,7 @@ export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
                                         key={store.id}
                                         className={`w-full text-center text-xs px-1 py-2 dark:hover:bg-gray-500 hover:bg-gray-300 cursor-pointer border border-gray-400 rounded-md overflow-hidden whitespace-nowrap overflow-ellipsis max-w-[180px]
                                                     ${selectedStores.includes(store.name.toLowerCase()) ? 'bg-blue-500 text-white' : ''}`}
-                                        onClick={() => toggleStore(store.name.toLowerCase())}
+                                        onClick={() => toggleFilter("store", store.name.toLowerCase())}
                                     >
                                         {store.name}
                                     </button>
@@ -310,7 +362,7 @@ export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
                                         key={brand.id}
                                         className={`w-full text-center text-xs py-2 dark:hover:bg-gray-500 hover:bg-gray-300 cursor-pointer border border-gray-400 rounded-md
                                                     ${selectedBrands.includes(brand.name.toLowerCase()) ? 'bg-blue-500 text-white' : ''}`}
-                                        onClick={() => toggleBrand(brand.name.toLowerCase())}
+                                        onClick={() => toggleFilter("brand", brand.name.toLowerCase())}
                                     >
                                         {brand.name}
                                     </button>
