@@ -1,4 +1,5 @@
 const { lastString } = require("./stringManipulation");
+const { generateRandomUserAgent } = require("./utils");
 
 function arraysEqual(arr1, arr2) {
     if (arr1.length !== arr2.length) return false;
@@ -81,6 +82,10 @@ function createSearchUrl(url, term) {
         return [`${url}tenis/${term.replace(/\s+/g, "-").toLowerCase()}?tipo-de-produto=tenis&marca=${term.replace(/\s+/g, "-").toLowerCase()}`];
     }
 
+    if (url.includes("yourid")) {
+        return [`${url}${term}`];
+    }
+
     console.error("Invalid URL:", url);
     return url;
 }
@@ -102,6 +107,7 @@ function getSearchTerms(searchTermObj) {
 async function getNumOfPages(numOfPagesObj) {
     const { page, storeName, storeSelectors, url } = numOfPagesObj;
     try {
+        await page.setUserAgent(await generateRandomUserAgent());
         await page.goto(url);
         switch (storeName) {
             case "CDR":
@@ -175,6 +181,10 @@ async function getNumOfPages(numOfPagesObj) {
                 })
                 return totalArtwalk ? Math.ceil(totalArtwalk / 12) : null;
 
+            case "YourID":
+                const totalYourID = await page.$$eval(storeSelectors.pagination, (els) => els[1].innerText.split(" ")[1].replace(/[()]/g, '').trim());
+                return totalYourID ? Math.ceil(totalYourID / 48) : null;
+
             default:
                 return null;
         }
@@ -191,6 +201,7 @@ async function getCurrentPage(currentPageObj) {
             case "CDR":
             case "Artwalk":
             case "LojaVirus":
+            case "YourID":
                 const pageMatch = url.match(/=(\d+)/);
                 return pageMatch ? parseInt(pageMatch[1]) : 1;
 

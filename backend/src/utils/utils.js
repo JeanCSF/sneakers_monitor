@@ -134,7 +134,24 @@ async function generateRandomUserAgent() {
 }
 
 function problematicUserAgents(userAgent) {
+    const lowercaseUserAgent = userAgent.toLowerCase();
+
     const problematicPatterns = [
+        /20040614/i,
+        /20091107/i,
+        /20100101/i,
+        /20100907/i,
+        /20110303/i,
+        /20110622/i,
+        /20110623/i,
+        /20120813/i,
+        /20121129/i,
+        /20121202/i,
+        /20130401/i,
+        /2009042316/i,
+        /20120403211507/i,
+
+        // Padrões relacionados a bots e crawlers
         /spider/i,
         /scraper/i,
         /msnbot/i,
@@ -142,10 +159,11 @@ function problematicUserAgents(userAgent) {
         /crawler/i,
         /bot/i,
         /bots/i,
+
+        // Outros padrões
         /mobi/i,
         /p1000m/i,
         /i800/i,
-        /20100101/i,
         /libwww/i,
         /java/i,
         /peach/i,
@@ -224,20 +242,13 @@ function problematicUserAgents(userAgent) {
         /samsung-/i,
         /matbjs/i,
         /debian/i,
-        /20110623/i,
-        /20110303/i,
-        /2009042316/i,
         /netsurf/i,
         /fennec/i,
         /karmic/i,
         /nook/i,
-        /20100907/i,
-        /20120813/i,
-        /20091107/i,
         /dillo/i,
         /clr/i,
         /swiftfox/i,
-        /20110622/i,
         /namoroka/i,
         /gregarius/i,
         /freebsd/i,
@@ -246,19 +257,20 @@ function problematicUserAgents(userAgent) {
         /netscape/i,
         /\[en\]/i,
         /csscheck/i,
-        /opera\/9\.25/i,
+        /opera\/9/i,
         /headlesschrome/i,
-        /20130401/i,
-        /20121129/i,
-        /20040614/i,
         /helena/i,
-        /20120403211507/i,
         /netbsd/i,
         /i686/i,
         /gentoo/i,
+        /gtb5/i,
+        /ppc/i,
+        /wow64/i,
+        /gutsy/i,
+        /htc/i,
     ];
 
-    return problematicPatterns.some(pattern => pattern.test(userAgent.toLowerCase()));
+    return problematicPatterns.some(pattern => pattern.test(lowercaseUserAgent));
 }
 
 async function getSunsetLinks(url) {
@@ -299,51 +311,48 @@ async function getLinks(getLinksObj) {
     const { page, url, storeObj, currentPage } = getLinksObj;
     let retries = 0;
     const maxRetries = 20;
-    let userAgent
+    let userAgent;
+
+    const waitForTimeout = async (milliseconds) => {
+        if (milliseconds > 0) {
+            await page.waitForTimeout(milliseconds);
+        }
+    };
 
     while (retries < maxRetries) {
         try {
-            storeObj.name === "GDLP" && await page.waitForTimeout(3000);
+            await waitForTimeout((storeObj.name === "GDLP" || storeObj.name === "CDR") ? 3000 : 0);
+
             if (storeObj.name === "Artwalk") {
-                await page.waitForSelector('button.vtex-modal-layout-0-x-closeButton', { timeout: 3000 }).catch(e => { });
+                await page.waitForSelector('button.vtex-modal-layout-0-x-closeButton', { timeout: 3000 });
                 await page.keyboard.press('Escape');
                 await page.evaluate(() => window.scrollBy(0, 500));
             }
 
             if (storeObj.name === "SunsetSkateshop") {
-                const links = await getSunsetLinks(url)
-
-                if (links.length > 0) {
-                    console.log(`Found ${links.length} links in ${url}`);
-                    return links;
-                } else {
-                    console.log(`No links found in ${url}`);
-                    return [];
-                }
+                const links = await getSunsetLinks(url);
+                console.log(links.length > 0 ? `Found ${links.length} links in ${url}` : `No links found in ${url}`);
+                return links;
             }
 
             if (currentPage > 1) {
                 await page.setUserAgent(await generateRandomUserAgent());
                 await page.goto(url, { waitUntil: "domcontentloaded" });
 
-                storeObj.name === "GDLP" || storeObj.name === "Ostore" && await page.waitForTimeout(3000);
+                await waitForTimeout((storeObj.name === "GDLP" || storeObj.name === "CDR" || storeObj.name === "Ostore") ? 3000 : 0);
 
                 if (storeObj.name === "Artwalk") {
-                    await page.waitForSelector('button.vtex-modal-layout-0-x-closeButton', { timeout: 3000 }).catch(e => { });
+                    await page.waitForSelector('button.vtex-modal-layout-0-x-closeButton', { timeout: 3000 });
                     await page.keyboard.press('Escape');
-                    await page.waitForTimeout(3000);
+                    await waitForTimeout(3000);
                     await page.evaluate(() => window.scrollBy(0, 500));
                 }
             }
 
-
             userAgent = await page.evaluate(() => navigator.userAgent);
-            const blocked =
-                await page.waitForSelector('#cf-wrapper', { timeout: 3000 }).catch(e => { }) ||
-                await page.waitForSelector('h4.please', { timeout: 3000 }).catch(e => { }) ||
-                await page.waitForSelector('.descr-reload', { timeout: 3000 }).catch(e => { });
+            const blocked = await page.waitForSelector('#cf-wrapper, h4.please, .descr-reload', { timeout: 3000 }).catch(() => null);
             if (blocked) {
-                throw new Error(`\nBlocked User Agent: ${userAgent}`);
+                throw new Error(`Blocked User Agent: ${userAgent}`);
             }
 
             const links = await page.$$eval(storeObj.selectors.links, (containers, storeObj) => {
@@ -369,20 +378,14 @@ async function getLinks(getLinksObj) {
                     .map(container => container.querySelector("a")?.href.replace(',', ''));
             }, storeObj);
 
-            if (links.length > 0) {
-                console.log(`Found ${links.length} links in ${url}`);
-                return links;
-            } else {
-                console.log(`No links found in ${url}`);
-                return [];
-            }
+            console.log(links.length > 0 ? `Found ${links.length} links in ${url}` : `No links found in ${url}`);
+            return links;
         } catch (error) {
-            storeObj.name === "GDLP" && await page.waitForTimeout(3000);
             retries++;
-            console.log(`
-            \nError getting links from: ${url}
-            \nError: ${error}
-            \nUser Agent: ${userAgent}`);
+            console.error(`
+                \nError getting links from: ${url}
+                \nError: ${error}
+                \nUser Agent: ${userAgent}`);
         }
     }
     throw new Error(`Failed to get links after ${maxRetries} retries`);
@@ -397,11 +400,10 @@ async function processLink(processLinkObj) {
     while (retries < maxRetries) {
         try {
             await page.setUserAgent(await generateRandomUserAgent());
-            await page.goto(url, { waitUntil: storeObj.name !== "Sunika" ? "load" : "domcontentloaded" });
-
-            storeObj.name === "GDLP" && await page.waitForTimeout(3000);
+            storeObj.name === "GDLP" || storeObj.name === "CDR" && await page.waitForTimeout(3000);
+            await page.goto(url, { waitUntil: "domcontentloaded" });
             userAgent = await page.evaluate(() => navigator.userAgent);
-            
+
             const blocked =
                 await page.waitForSelector('#cf-wrapper', { timeout: 3000 }).catch(e => { }) ||
                 await page.waitForSelector('h4.please', { timeout: 3000 }).catch(e => { }) ||
@@ -443,7 +445,9 @@ async function processLink(processLinkObj) {
                 !sneakerTitle.toLowerCase().includes('calça') ||
                 !sneakerTitle.toLowerCase().includes('camisa') ||
                 !sneakerTitle.toLowerCase().includes('camiseta') ||
-                !sneakerTitle.toLowerCase().includes('bolsa')) {
+                !sneakerTitle.toLowerCase().includes('bolsa') ||
+                !sneakerTitle.toLowerCase().includes('shorts') ||
+                !sneakerTitle.toLowerCase().includes('mochila')) {
                 await updateOrCreateSneaker(sneakerObj);
 
                 storeObj.name === "CDR" && await page.waitForTimeout(5000);
@@ -453,7 +457,7 @@ async function processLink(processLinkObj) {
                 return;
             }
         } catch (error) {
-            storeObj.name === "GDLP" && await page.waitForTimeout(3000);
+            storeObj.name === "GDLP" || storeObj.name === "CDR" && await page.waitForTimeout(3000);
             retries++;
             console.log(`
             \nError processing link: ${url}
@@ -461,7 +465,11 @@ async function processLink(processLinkObj) {
             \nUser Agent: ${userAgent}`);
         }
     }
-    throw new Error(`Failed to process link after ${maxRetries} retries \nUser agent: ${userAgent}`);
+    throw new Error(`
+    \nFailed to process link after ${maxRetries} retries 
+    \nUrl: ${url}
+    \nUser agent: ${userAgent}
+    `);
 }
 
 module.exports = {

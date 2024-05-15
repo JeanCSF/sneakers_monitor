@@ -7,7 +7,8 @@ async function getProductReference(referenceObj) {
         if (
             storeObj.name === "CDR" ||
             storeObj.name === "WallsGeneralStore" ||
-            storeObj.name === "GDLP"
+            storeObj.name === "GDLP" ||
+            storeObj.name === "YourID"
         ) {
             const productReference = await page.$eval(storeObj.selectors.productReference, (el) => el?.innerText.toUpperCase().trim());
             return productReference;

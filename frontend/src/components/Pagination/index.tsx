@@ -1,4 +1,5 @@
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { useLoading } from "../../utils/Hooks";
 type PaginationProps = {
     currentPage: number;
     totalPages: number;
@@ -7,7 +8,9 @@ type PaginationProps = {
     onPageChange: (page: number) => void;
 }
 export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, hasNextPage, totalCount, onPageChange }) => {
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchParams] = useSearchParams();
+    const { setIsLoading } = useLoading();
+    const navigate = useNavigate();
 
     const handleNextPage = () => {
         const nextPage = currentPage + 1;
@@ -22,9 +25,10 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
     };
 
     const updateURL = (page: number) => {
+        setIsLoading(true);
         const newSearchParams = new URLSearchParams(searchParams);
         newSearchParams.set('page', page.toString());
-        setSearchParams(newSearchParams);
+        navigate(`?${newSearchParams.toString()}`);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -76,7 +80,6 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
                 </p>
             </div>
             <div className="flex items-center justify-center">
-
                 <button
                     onClick={handlePrevPage}
                     disabled={currentPage === 1}
