@@ -76,7 +76,6 @@ export const Sort: React.FC<SortProps> = ({ isSortOpen, setIsSortOpen }) => {
 
     const toggleFilter = (filterType: string, value: string) => {
         let selectedFilters;
-        console.log(value)
         switch (filterType) {
             case 'color':
                 selectedFilters = selectedColors;

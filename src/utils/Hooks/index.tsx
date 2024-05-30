@@ -22,7 +22,7 @@ export const useSneakers = (
   maxPrice?: string
 ): UseQueryResult<apiResponse> => {
   const params = new URLSearchParams({
-    limit: '12',
+    limit: '28',
     page: page.toString(),
     ...(search && { search }),
     ...(orderBy && { orderBy }),
