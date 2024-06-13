@@ -7,6 +7,7 @@ import { apiClient } from "../utils/api";
 import { Card } from "../components/Card";
 import { Loading } from "../components/Loading";
 import { PriceChart } from "../components/PriceChart";
+import { NotFound } from "../components/NotFound";
 
 export const Sneaker: React.FC = () => {
   const { id } = useParams();
@@ -14,22 +15,30 @@ export const Sneaker: React.FC = () => {
   const { isLoading, setIsLoading } = useLoading();
 
   const [sneaker, setSneaker] = useState<Sneakers | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [sameSneakerDiferentStore, setSameSneakerDiferentStore] = useState<
     Sneakers[]
   >([]);
 
   useEffect(() => {
     setIsLoading(true);
-    apiClient.get<Sneakers>(`/sneaker/${id}`).then((res) => {
-      setSneaker(res.data);
-      setIsLoading(false);
-    });
+    apiClient
+      .get<Sneakers>(`/sneaker/${id}`)
+      .then((res) => {
+        setSneaker(res.data);
+        setNotFound(false);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setNotFound(true);
+        setIsLoading(false);
+      });
   }, [id, setIsLoading]);
 
   useEffect(() => {
     const setTitle = () => {
       document.title = `${sneaker?.sneakerTitle} - ${sneaker?.productReference} | SNKR MAGNET`;
-    }
+    };
     const mountSameSneakerDiferentStoreUrl = () => {
       return `/sneakers/search/${sneaker?.productReference.trim()}?`;
     };
@@ -52,7 +61,8 @@ export const Sneaker: React.FC = () => {
       fetchSameSneakerDiferentStore();
       setTitle();
     }
-  }, [sneaker]);
+    setIsLoading(false);
+  }, [setIsLoading, sneaker]);
 
   const handleLinkClick = () => {
     setIsLoading(true);
@@ -190,6 +200,7 @@ export const Sneaker: React.FC = () => {
           </div>
         )
       )}
+      {notFound ? <NotFound /> : null}
     </div>
   );
 };

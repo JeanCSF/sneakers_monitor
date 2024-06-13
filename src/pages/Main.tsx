@@ -118,7 +118,7 @@ export const Main: React.FC<MainPageProps> = ({ route }) => {
           {sneakers.length === 0 && (
             <div className="h-screen flex flex-col justify-center items-center">
               <p className="dark:text-gray-400">
-                Sem resultados para os filtros aplicados
+                Sem resultados para esta busca
               </p>
               <p
                 className="p-1 rounded text-center cursor-pointer bg-blue-400 text-white"
@@ -131,7 +131,7 @@ export const Main: React.FC<MainPageProps> = ({ route }) => {
           {sneakers.length !== 0 && (
             <>
               <div
-                className="flex dark:text-gray-400 rounded md:static cursor-pointer text-3xl"
+                className="flex dark:text-gray-400 rounded cursor-pointer text-3xl w-8"
                 title="Filtrar Resultados"
                 onClick={() => setIsSortOpen(true)}
               >
