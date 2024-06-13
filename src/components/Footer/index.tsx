@@ -103,10 +103,10 @@ export const Footer: React.FC = () => {
                   to="/sobre"
                   className="text-xl"
                   role="link"
-                  title="Sobre o Site"
+                  title="Como funciona"
                   onClick={handleLinkClick}
                 >
-                  Sobre o Site
+                  Como funciona
                 </Link>
               </li>
               <li>

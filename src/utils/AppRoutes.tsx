@@ -2,7 +2,6 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate,
 } from "react-router-dom";
 import { QueryClientProvider } from "react-query";
 
@@ -22,7 +21,6 @@ export const AppRoutes = () => {
       <Router basename="/">
         <Navbar />
         <Routes>
-          <Route path="/home" element={<Navigate to="/" />} />
           <Route path="/" element={<Home />} />
           <Route
             path="/buscar/:search"
